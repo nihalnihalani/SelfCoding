@@ -17,6 +17,7 @@ from agents.manager_agent import ManagerAgent
 from agents.base_agent import A2AMessage
 from self_learning.self_improvement_engine import SelfImprovementEngine
 from integrations.daytona_sandbox import daytona_sandbox
+from copilotkit_setup import setup_copilotkit, set_data_refs
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
