@@ -3,6 +3,9 @@ import "@/App.css";
 import Generator from "./components/Generator";
 import PatternLibrary from "./components/PatternLibrary";
 import Dashboard from "./components/Dashboard";
+import CopilotKitProvider from "./components/CopilotKitProvider";
+import CopilotAssistant from "./components/CopilotAssistant";
+import { Toaster } from "./components/ui/sonner";
 
 function App() {
   const [activeTab, setActiveTab] = useState('generate');
