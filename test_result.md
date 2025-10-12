@@ -188,3 +188,5 @@ test_plan:
 agent_communication:
   - agent: "main"
     message: "Completed CopilotKit integration work. The button visibility issue was a misunderstanding - the button works correctly but auto-opens on first visit. Main issue now is Mixed Content Error where CopilotKit SDK tries to connect via HTTP instead of HTTPS. Backend is properly set up with SDK but frontend can't connect. Frontend actions (useCopilotAction) may still work since they call APIs directly via axios. Need backend testing to verify all API endpoints work correctly."
+  - agent: "testing"
+    message: "Backend API testing completed. Created comprehensive backend_test.py for testing all core endpoints. CRITICAL FINDING: /api/generate endpoint has timeout issue - accepts requests but hangs during LLM processing, blocking core functionality. Root, metrics, and patterns endpoints work perfectly. LLM integration itself works fine when tested directly. Issue appears to be in the generate endpoint's request handling or async processing. This needs immediate investigation as it prevents app generation."
