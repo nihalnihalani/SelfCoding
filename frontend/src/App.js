@@ -104,6 +104,7 @@ function App() {
         {activeTab === 'generate' && <Generator />}
         {activeTab === 'patterns' && <PatternLibrary />}
         {activeTab === 'dashboard' && <Dashboard />}
+        {activeTab === 'self-learning' && <SelfLearning />}
       </main>
 
       {/* Footer */}
