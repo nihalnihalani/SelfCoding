@@ -119,15 +119,18 @@ backend:
   
   - task: "API Endpoints (/api/generate, /api/patterns, /api/metrics)"
     implemented: true
-    working: true
+    working: false
     file: "/app/backend/server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
     needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "All standard API endpoints working correctly. Generation, patterns, and metrics endpoints functional."
+      - working: false
+        agent: "testing"
+        comment: "Backend testing completed. ✅ GET /api/ (root endpoint) - Working correctly, returns system info with all expected features. ✅ GET /api/metrics - Working correctly, returns proper metrics structure. ✅ GET /api/patterns - Working correctly, returns empty patterns list (expected for new system). ❌ POST /api/generate - CRITICAL ISSUE: Endpoint accepts requests but times out after 60+ seconds. LLM integration works fine when tested directly, but generate endpoint hangs during processing. This blocks core app generation functionality."
 
 frontend:
   - task: "CopilotKit Button Visibility"
