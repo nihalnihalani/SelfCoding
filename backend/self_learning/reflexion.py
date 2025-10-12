@@ -260,6 +260,10 @@ Return JSON:
         best_solution = None
         best_score = 0
         
+        prev_solution = None
+        prev_evaluation = None
+        prev_reflection = None
+        
         for iteration in range(max_iterations):
             print(f"\n=== Reflexion Iteration {iteration + 1}/{max_iterations} ===")
             
