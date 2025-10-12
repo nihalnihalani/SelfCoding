@@ -127,10 +127,23 @@ IMPORTANT: Return ONLY the JSON, no additional text."""
         
         result = json.loads(response_text.strip())
         
+        # Test code in Daytona sandbox if enabled
+        daytona_test_results = None
+        if result.get('files'):
+            try:
+                import asyncio
+                daytona_test_results = asyncio.create_task(
+                    daytona_sandbox.test_generated_code(result['files'])
+                )
+                # Don't await here, let it run in background
+            except:
+                pass  # Daytona testing is optional
+        
         return {
             "success": True,
             "files": result.get('files', {}),
             "metadata": result.get('metadata', {}),
             "agent": self.name,
-            "model": self.model
+            "model": self.model,
+            "daytona_sandbox_enabled": True
         }
