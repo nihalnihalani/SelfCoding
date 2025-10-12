@@ -10,10 +10,8 @@ export const CopilotKitProvider = ({ children }) => {
   
   return (
     <CopilotKit
-      publicLicenseKey="ck_pub_a21c9b4bd5dbd3edd0c9e4edbded8100"
       runtimeUrl={runtimeUrl}
-      agent="codeforge_manager"
-      showDevConsole={true}
+      showDevConsole={false}
     >
       {children}
     </CopilotKit>
