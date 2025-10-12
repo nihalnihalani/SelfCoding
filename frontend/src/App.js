@@ -96,11 +96,18 @@ function App() {
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex justify-between text-sm text-slate-600 font-medium">
             <span>🏆 Built for AI Agents Hackathon 2025</span>
-            <span>⚡ Powered by Google Gemini 2.5</span>
+            <span>⚡ Multi-Agent A2A • Gemini 2.5 • CopilotKit</span>
           </div>
         </div>
       </footer>
+
+      {/* CopilotKit AI Assistant */}
+      <CopilotAssistant />
+
+      {/* Toast Notifications */}
+      <Toaster />
     </div>
+    </CopilotKitProvider>
   );
 }
 
