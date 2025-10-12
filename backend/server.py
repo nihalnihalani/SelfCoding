@@ -480,7 +480,7 @@ async def call_agent(agent_name: str, message: dict):
 
 @api_router.post("/generate", response_model=GenerationResponse)
 async def generate_app_endpoint(request: GenerationRequest):
-    """Generate a web application using A2A multi-agent system."""
+    """Generate a web application."""
     
     client_id = str(uuid.uuid4())
     start_time = time.time()
@@ -498,36 +498,24 @@ async def generate_app_endpoint(request: GenerationRequest):
         
         past_patterns = retrieve_similar_patterns(request.description, n=3)
         
-        # Step 2: Use A2A Manager Agent for orchestration
+        # Step 2: Generate with Gemini
         await send_update({
             "type": "status",
-            "message": "🤖 Orchestrating multi-agent workflow...",
-            "progress": 20
+            "message": "💻 Generating code...",
+            "progress": 30
         })
         
-        # Create A2A message for manager agent
-        a2a_message = A2AMessage(
-            method="generate_and_review",
-            params={
-                "description": request.description,
-                "patterns": [p for p in past_patterns],
-                "auto_review": request.use_thinking  # Use thinking mode for review
-            }
+        result = await generate_with_gemini(
+            request.description,
+            past_patterns,
+            request.use_thinking,
+            send_update
         )
         
-        # Process through manager agent
-        manager_response = await manager_agent.process_message(a2a_message)
-        
-        if manager_response.error:
-            error_msg = manager_response.error.get('message', 'Unknown error')
+        if not result.get('success'):
+            error_msg = result.get('error', 'Generation failed')
             store_failure(request.description, error_msg)
             raise HTTPException(status_code=500, detail=error_msg)
-        
-        result = manager_response.result
-        
-        if not result.get('success'):
-            store_failure(request.description, 'Multi-agent generation failed')
-            raise HTTPException(status_code=500, detail='Generation failed')
         
         # Step 3: Mock deployment
         await send_update({
@@ -548,30 +536,18 @@ async def generate_app_endpoint(request: GenerationRequest):
         # Complete
         await send_update({
             "type": "complete",
-            "message": "✅ Multi-agent generation complete!",
+            "message": "✅ Generation complete!",
             "progress": 100
         })
         
         time_taken = time.time() - start_time
         
-        # Build response with A2A metadata
-        metadata = result.get('metadata', {})
-        if result.get('review'):
-            metadata['code_review'] = {
-                'quality_score': result['review'].get('quality_score'),
-                'approved': result['review'].get('approved'),
-                'issues_count': len(result['review'].get('issues', []))
-            }
-        
-        metadata['workflow_log'] = result.get('workflow_log', [])
-        metadata['orchestrated_by'] = result.get('orchestrated_by', 'manager')
-        
         return GenerationResponse(
             success=True,
             files=result.get('files'),
-            metadata=metadata,
+            metadata=result.get('metadata', {}),
             deployed_url=deployed_url,
-            technical_plan=None,
+            technical_plan=result.get('technical_plan'),
             patterns_used=len(past_patterns),
             time_taken=time_taken
         )
