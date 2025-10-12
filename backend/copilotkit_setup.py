@@ -66,19 +66,19 @@ async def get_app_suggestions(query: str) -> List[str]:
     return suggestions[:3]
 
 # Create CopilotKit actions
-metrics_action = CopilotAction(
+metrics_action = Action(
     get_system_metrics,
     name="get_metrics",
     description="Get CodeForge system metrics including success rate, total apps, and patterns learned"
 )
 
-patterns_action = CopilotAction(
+patterns_action = Action(
     get_pattern_library,
     name="get_patterns",
     description="Get the pattern library with learned code patterns and their success rates"
 )
 
-suggestions_action = CopilotAction(
+suggestions_action = Action(
     get_app_suggestions,
     name="get_suggestions",
     description="Get app building suggestions based on a query or user needs"
