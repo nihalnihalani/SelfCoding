@@ -3,7 +3,7 @@ CopilotKit SDK Integration for CodeForge
 Provides proper streaming AG-UI protocol support
 """
 
-from copilotkit import CopilotKitRemoteEndpoint, CopilotAction, CopilotKitSDK
+from copilotkit import CopilotKitRemoteEndpoint, Action, CopilotKitSDK
 from copilotkit.integrations.fastapi import add_fastapi_endpoint
 from typing import Dict, List
 import os
