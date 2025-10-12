@@ -32,6 +32,9 @@ failure_patterns_db = []
 # Initialize A2A Manager Agent
 manager_agent = ManagerAgent()
 
+# Initialize Self-Improvement Engine
+self_improvement_engine = SelfImprovementEngine()
+
 # Models
 class GenerationRequest(BaseModel):
     description: str
