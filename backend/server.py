@@ -490,23 +490,17 @@ async def get_patterns():
     """Get all learned patterns."""
     
     try:
-        if success_collection.count() == 0:
-            return []
-        
-        results = success_collection.get()
-        
         patterns = []
-        for i, doc in enumerate(results['documents']):
-            metadata = results['metadatas'][i]
+        for pattern in success_patterns_db:
             patterns.append(Pattern(
-                id=results['ids'][i],
-                description=doc,
-                code_snippet=metadata.get('code_snippet', ''),
-                tech_stack=json.loads(metadata.get('tech_stack', '[]')),
-                features=json.loads(metadata.get('features', '[]')),
-                usage_count=metadata.get('usage_count', 0),
-                success_rate=metadata.get('success_rate', 1.0),
-                timestamp=metadata.get('timestamp')
+                id=pattern['id'],
+                description=pattern['description'],
+                code_snippet=pattern['code_snippet'],
+                tech_stack=pattern['tech_stack'],
+                features=pattern['features'],
+                usage_count=pattern.get('usage_count', 0),
+                success_rate=pattern.get('success_rate', 1.0),
+                timestamp=pattern['timestamp']
             ))
         
         return patterns
