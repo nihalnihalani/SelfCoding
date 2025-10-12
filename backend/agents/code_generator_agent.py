@@ -4,6 +4,9 @@ from emergentintegrations.llm.chat import LlmChat, UserMessage
 import os
 import json
 import uuid
+import sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+from integrations.daytona_sandbox import daytona_sandbox
 
 
 class CodeGeneratorAgent(BaseAgent):
