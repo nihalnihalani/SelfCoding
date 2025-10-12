@@ -91,5 +91,5 @@ copilotkit_sdk = CopilotKitRemoteEndpoint(
 
 def setup_copilotkit(app):
     """Add CopilotKit endpoint to FastAPI app."""
-    add_fastapi_endpoint(app, copilotkit_sdk, path="/api/copilotkit")
+    add_fastapi_endpoint(app, copilotkit_sdk, prefix="/api/copilotkit")
     return copilotkit_sdk
