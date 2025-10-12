@@ -266,16 +266,30 @@ Return ONLY valid JSON in this exact format:
             
             # Parse JSON response
             try:
-                # Clean response
+                # Clean response - remove markdown code blocks
                 response_text = code_response.strip()
-                if response_text.startswith('```json'):
-                    response_text = response_text[7:]
-                if response_text.startswith('```'):
-                    response_text = response_text[3:]
-                if response_text.endswith('```'):
-                    response_text = response_text[:-3]
                 
-                result = json.loads(response_text.strip())
+                # Remove markdown code block markers
+                if '```json' in response_text:
+                    response_text = response_text.split('```json')[1]
+                    if '```' in response_text:
+                        response_text = response_text.split('```')[0]
+                elif '```' in response_text:
+                    response_text = response_text.split('```')[1]
+                    if '```' in response_text:
+                        response_text = response_text.split('```')[0]
+                
+                response_text = response_text.strip()
+                
+                # Try to parse JSON
+                result = json.loads(response_text)
+                
+                # Validate structure
+                if 'files' not in result or not isinstance(result['files'], dict):
+                    return {
+                        'success': False,
+                        'error': "Invalid response structure: missing 'files' dictionary"
+                    }
                 
                 return {
                     'success': True,
@@ -285,10 +299,10 @@ Return ONLY valid JSON in this exact format:
                     'model': 'gemini-2.5-pro + flash'
                 }
             except json.JSONDecodeError as e:
-                # If JSON parsing fails, try to extract code manually
+                # If JSON parsing fails, create a simple error response
                 return {
                     'success': False,
-                    'error': f"Failed to parse JSON response: {str(e)}"
+                    'error': f"Failed to parse AI response as JSON. The model may have returned plain text instead of JSON format. Error: {str(e)[:200]}"
                 }
         
         else:
