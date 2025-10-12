@@ -92,43 +92,33 @@ generation_history = []
 
 # Helper functions
 def retrieve_similar_patterns(description: str, n: int = 3) -> List[Dict]:
-    """Retrieve similar patterns from ChromaDB."""
-    if success_collection.count() == 0:
+    """Retrieve similar patterns from in-memory storage."""
+    if not success_patterns_db:
         return []
     
-    try:
-        results = success_collection.query(
-            query_texts=[description],
-            n_results=min(n, success_collection.count())
-        )
+    # Simple keyword matching for patterns
+    description_lower = description.lower()
+    scored_patterns = []
+    
+    for pattern in success_patterns_db:
+        pattern_desc_lower = pattern['description'].lower()
+        # Count matching words
+        desc_words = set(description_lower.split())
+        pattern_words = set(pattern_desc_lower.split())
+        match_score = len(desc_words & pattern_words)
         
-        patterns = []
-        if results['documents']:
-            for i, doc in enumerate(results['documents'][0]):
-                metadata = results['metadatas'][0][i]
-                pattern_id = results['ids'][0][i]
-                
-                # Increment usage
-                current_usage = metadata.get('usage_count', 0)
-                success_collection.update(
-                    ids=[pattern_id],
-                    metadatas=[{**metadata, 'usage_count': current_usage + 1}]
-                )
-                
-                patterns.append({
-                    'id': pattern_id,
-                    'description': doc,
-                    'code_snippet': metadata.get('code_snippet', ''),
-                    'tech_stack': json.loads(metadata.get('tech_stack', '[]')),
-                    'features': json.loads(metadata.get('features', '[]')),
-                    'success_rate': metadata.get('success_rate', 1.0),
-                    'usage_count': current_usage + 1,
-                    'timestamp': metadata.get('timestamp')
-                })
-        
-        return patterns
-    except:
-        return []
+        if match_score > 0:
+            scored_patterns.append((match_score, pattern))
+    
+    # Sort by score and return top n
+    scored_patterns.sort(key=lambda x: x[0], reverse=True)
+    top_patterns = [p[1] for p in scored_patterns[:n]]
+    
+    # Increment usage count
+    for pattern in top_patterns:
+        pattern['usage_count'] = pattern.get('usage_count', 0) + 1
+    
+    return top_patterns
 
 def store_success(description: str, code: Dict, metadata: Dict):
     """Store successful generation."""
