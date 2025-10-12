@@ -651,6 +651,59 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-@app.on_event("shutdown")
+@api_router.post("/copilotkit")
+async def copilotkit_runtime(request: dict):
+    """CopilotKit runtime endpoint for AG UI protocol."""
+    try:
+        # Extract action from request
+        action = request.get('action')
+        messages = request.get('messages', [])
+        
+        if action == 'generate_app':
+            # Get last user message
+            user_message = messages[-1].get('content', '') if messages else ''
+            
+            # Use A2A agent for generation
+            a2a_message = A2AMessage(
+                method=\"generate_and_review\",
+                params={
+                    \"description\": user_message,
+                    \"patterns\": retrieve_similar_patterns(user_message, n=2),
+                    \"auto_review\": True
+                }
+            )
+            
+            response = await manager_agent.process_message(a2a_message)
+            
+            if response.error:
+                return {
+                    \"response\": f\"Error: {response.error.get('message')}\",
+                    \"metadata\": {\"error\": True}
+                }
+            
+            result = response.result
+            
+            return {
+                \"response\": f\"Generated app successfully! Files: {list(result.get('files', {}).keys())}\",
+                \"data\": result,
+                \"metadata\": {
+                    \"success\": True,
+                    \"agent\": \"a2a-manager\"
+                }
+            }
+        
+        # Default chat response
+        return {
+            \"response\": \"I can help you generate web applications! Just describe what you want to build.\",
+            \"metadata\": {\"available_actions\": [\"generate_app\"]}
+        }
+        
+    except Exception as e:
+        return {
+            \"response\": f\"Error: {str(e)}\",
+            \"metadata\": {\"error\": True}
+        }
+
+@app.on_event(\"shutdown\")
 async def shutdown_db_client():
     client.close()
