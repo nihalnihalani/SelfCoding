@@ -708,6 +708,66 @@ async def copilotkit_runtime(request: dict):
             "metadata": {"error": True}
         }
 
+@api_router.post("/self-improve/generate")
+async def self_improving_generate(request: GenerationRequest):
+    """Generate with recursive self-improvement (Reflexion framework)."""
+    
+    try:
+        # Use self-improvement engine
+        result = await self_improvement_engine.recursive_self_improvement(
+            task=request.description,
+            context={"use_patterns": True}
+        )
+        
+        # Store in pattern library
+        if result.get('final_score', 0) >= 80:
+            store_success(
+                request.description,
+                result['solution'],
+                result['solution'].get('metadata', {})
+            )
+        
+        return {
+            "success": True,
+            "files": result['solution'].get('files', {}),
+            "metadata": result['solution'].get('metadata', {}),
+            "self_improvement": {
+                "final_score": result['final_score'],
+                "iterations": result['iterations'],
+                "improvement_cycle": result['improvement_cycle'],
+                "memory_stats": result['memory_stats'],
+                "learning_summary": result.get('learning_summary', {})
+            },
+            "deployed_url": f"https://codeforge-demo-{int(time.time())}.vercel.app"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/self-learning/report")
+async def get_learning_report():
+    """Get comprehensive self-learning report."""
+    try:
+        report = self_improvement_engine.get_learning_report()
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/self-learning/memory")
+async def get_memory_stats():
+    """Get memory system statistics."""
+    try:
+        stats = self_improvement_engine.memory.get_statistics()
+        knowledge = self_improvement_engine.memory.get_consolidated_knowledge()
+        
+        return {
+            "statistics": stats,
+            "consolidated_knowledge": knowledge,
+            "recent_reflections": self_improvement_engine.memory.reflective[-5:] if self_improvement_engine.memory.reflective else []
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
