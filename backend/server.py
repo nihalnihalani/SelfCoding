@@ -530,7 +530,7 @@ async def get_metrics():
             total_apps=total_apps,
             successful_apps=successful_apps,
             success_rate=successful_apps / total_apps if total_apps > 0 else 0,
-            pattern_count=success_collection.count(),
+            pattern_count=len(success_patterns_db),
             failed_attempts=total_apps - successful_apps,
             success_history=success_history
         )
