@@ -704,6 +704,6 @@ async def copilotkit_runtime(request: dict):
             "metadata": {"error": True}
         }
 
-@app.on_event(\"shutdown\")
+@app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
