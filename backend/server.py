@@ -125,18 +125,18 @@ def store_success(description: str, code: Dict, metadata: Dict):
     code_snippet = code.get('files', {}).get('index.html', '')[:500] if 'files' in code else str(code)[:500]
     pattern_id = f"success_{datetime.now().timestamp()}"
     
-    success_collection.add(
-        documents=[description],
-        metadatas=[{
-            'code_snippet': code_snippet,
-            'tech_stack': json.dumps(metadata.get('tech_stack', [])),
-            'features': json.dumps(metadata.get('features', [])),
-            'timestamp': datetime.now().isoformat(),
-            'success_rate': 1.0,
-            'usage_count': 0
-        }],
-        ids=[pattern_id]
-    )
+    pattern = {
+        'id': pattern_id,
+        'description': description,
+        'code_snippet': code_snippet,
+        'tech_stack': metadata.get('tech_stack', []),
+        'features': metadata.get('features', []),
+        'timestamp': datetime.now().isoformat(),
+        'success_rate': 1.0,
+        'usage_count': 0
+    }
+    
+    success_patterns_db.append(pattern)
     
     generation_history.append({
         'timestamp': datetime.now(),
