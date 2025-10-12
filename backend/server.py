@@ -647,6 +647,8 @@ async def copilotkit_chat(request: Request):
         body = await request.json()
         messages = body.get('messages', [])
         
+        logger.info(f"CopilotKit request: {len(messages)} messages")
+        
         # Get the last user message
         user_message = ""
         for msg in reversed(messages):
@@ -663,6 +665,8 @@ async def copilotkit_chat(request: Request):
                 if user_message:
                     break
         
+        logger.info(f"User message: {user_message}")
+        
         if not user_message:
             user_message = "hello"
         
@@ -673,32 +677,37 @@ async def copilotkit_chat(request: Request):
             total = len(generation_history)
             success = sum(1 for g in generation_history if g.get('success'))
             rate = (success / total * 100) if total > 0 else 0
-            response_text = f"📊 **Performance Metrics:**\n\n• Total Apps: {total}\n• Successful: {success}\n• Success Rate: {rate:.1f}%\n• Patterns: {len(success_patterns_db)}\n\nView full details in the Dashboard tab!"
+            response_text = f"📊 Performance Metrics:\n\n• Total Apps: {total}\n• Successful: {success}\n• Success Rate: {rate:.1f}%\n• Patterns: {len(success_patterns_db)}\n\nView full details in the Dashboard tab!"
         
         elif any(word in user_lower for word in ['pattern', 'library', 'learn']):
             count = len(success_patterns_db)
-            response_text = f"📚 **Pattern Library:**\n\n{count} patterns learned so far!\n\nPatterns help CodeForge remember successful code structures and reuse them. Check the Pattern Library tab to see all patterns!"
+            response_text = f"📚 Pattern Library:\n\n{count} patterns learned so far!\n\nPatterns help CodeForge remember successful code structures. Check the Pattern Library tab!"
         
         elif any(word in user_lower for word in ['generate', 'create', 'build']):
-            response_text = "🚀 **Generate Apps:**\n\nI can help you build web applications! Just:\n\n1. Go to the **Generate** tab\n2. Describe your app\n3. Click **Generate App**\n\nI'll create HTML, CSS, and JavaScript for you in seconds!"
+            response_text = "🚀 Generate Apps:\n\nI can help you build web applications! Just:\n\n1. Go to the Generate tab\n2. Describe your app\n3. Click Generate App\n\nI'll create HTML, CSS, and JavaScript for you!"
         
         else:
-            response_text = f"👋 Hi! I'm your CodeForge assistant.\n\nAsk me about:\n• 📊 Metrics and performance\n• 📚 Pattern library  \n• 🚀 How to generate apps\n\nWhat would you like to know?"
+            response_text = f"👋 Hi! I'm your CodeForge assistant.\n\nAsk me about:\n• 📊 Metrics and performance\n• 📚 Pattern library\n• 🚀 How to generate apps\n\nWhat would you like to know?"
         
         # Return in CopilotKit expected format
-        return {
+        response = {
             "messages": [{
+                "id": str(uuid.uuid4()),
                 "role": "assistant",
                 "content": response_text
             }]
         }
         
+        logger.info(f"Sending response: {response_text[:100]}...")
+        return response
+        
     except Exception as e:
         logger.error(f"CopilotKit endpoint error: {str(e)}")
         return {
             "messages": [{
+                "id": str(uuid.uuid4()),
                 "role": "assistant",
-                "content": "I encountered an error. Please try again or use the tabs above to access features directly."
+                "content": "I encountered an error. Please try again or use the tabs above."
             }]
         }
 
