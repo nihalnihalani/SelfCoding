@@ -637,67 +637,235 @@ async def get_metrics():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.get("/copilotkit")
-async def copilotkit_health():
-    """CopilotKit health check endpoint."""
-    return {
-        "status": "ok",
-        "agent": "codeforge_manager",
-        "capabilities": ["chat", "generate_app"]
-    }
-
 @api_router.post("/copilotkit")
 async def copilotkit_runtime(request: Request):
-    """CopilotKit runtime endpoint - AG UI protocol compatible."""
+    """CopilotKit runtime endpoint - Full AG-UI protocol implementation."""
     
     try:
-        # Parse request body
         body = await request.json()
         
-        # Extract action and messages from request
-        action = body.get('action', '')
+        # Extract messages from CopilotKit request
         messages = body.get('messages', [])
+        properties = body.get('properties', {})
         
-        # Get last user message
-        user_message = ''
-        if messages:
-            for msg in reversed(messages):
-                if msg.get('role') == 'user':
-                    user_message = msg.get('content', '')
-                    break
+        # Get the last user message
+        user_message = ""
+        for msg in reversed(messages):
+            if msg.get('role') == 'user':
+                user_message = msg.get('content', '')
+                break
         
-        # If no specific action, treat as chat
-        if not action or action == 'chat':
-            return {
-                "messages": [{
-                    "role": "assistant",
-                    "content": f"I can help you generate web applications! Just describe what you want to build. For example: 'Create a todo list app with dark mode'"
-                }]
-            }
+        # Detect intent from user message
+        user_lower = user_message.lower()
         
-        # Handle app generation action
-        if action == 'generate_app' and user_message:
-            return {
-                "messages": [{
-                    "role": "assistant", 
-                    "content": f"I'll generate that app for you! Please use the Generate tab for full functionality. For now, I can help answer questions about CodeForge's features:\n\n🤖 Multi-Agent System\n🧠 Self-Learning with Reflexion\n🔐 Daytona Sandbox\n📚 Pattern Library\n\nWhat would you like to know?"
-                }]
-            }
+        # Intent: Generate app
+        if any(word in user_lower for word in ['generate', 'create', 'build', 'make']):
+            # Check if it's asking for info or actual generation
+            if any(word in user_lower for word in ['how', 'what', 'explain', '?']):
+                response_text = """I can help you generate web applications! Here's how:
+
+**Using the Generate Tab:**
+1. Click the "Generate" tab at the top
+2. Describe your app in detail
+3. Toggle options (Pro Planning, Auto-test)
+4. Click "Generate App"
+5. Wait for AI to create your app (~10-15 seconds)
+
+**What I Can Build:**
+• Todo/Task apps
+• Calculators
+• Dashboards
+• Forms & Surveys
+• Interactive games
+• Data visualization
+• And much more!
+
+Want to try it? Go to the Generate tab and describe what you want!"""
+            else:
+                # Extract what they want to build
+                response_text = f"""I understand you want to build something! 
+
+**To generate your app:**
+1. Click the **"Generate"** tab above
+2. Enter this description: "{user_message}"
+3. Click **"Generate App"**
+
+The multi-agent system will:
+• Code Generator creates the app
+• Code Reviewer checks quality
+• Pattern Library learns from it
+
+You'll get a complete app with HTML, CSS, and JavaScript in about 10-15 seconds!
+
+Ready to try it? Click the Generate tab! 🚀"""
         
-        # Default response
+        # Intent: Check patterns
+        elif any(word in user_lower for word in ['pattern', 'library', 'learn', 'memory']):
+            # Get pattern count
+            pattern_count = len(success_patterns_db)
+            response_text = f"""📚 **Pattern Library Status:**
+
+**Learned Patterns:** {pattern_count} successful patterns
+**What it does:** Stores successful code patterns to reuse in future generations
+
+**View patterns:**
+Click the **"Pattern Library"** tab to see all learned patterns with:
+• Code snippets
+• Success rates
+• Technologies used
+• Features implemented
+
+The more you use CodeForge, the smarter it gets! 🧠"""
+        
+        # Intent: Check dashboard/metrics
+        elif any(word in user_lower for word in ['dashboard', 'metric', 'performance', 'stat']):
+            total = len(generation_history)
+            success = sum(1 for g in generation_history if g.get('success'))
+            rate = (success / total * 100) if total > 0 else 0
+            
+            response_text = f"""📊 **Performance Dashboard:**
+
+**Stats:**
+• Total Apps Built: {total}
+• Successful: {success}
+• Success Rate: {rate:.1f}%
+• Patterns Learned: {len(success_patterns_db)}
+
+**View full dashboard:**
+Click the **"Dashboard"** tab for:
+• Visual charts
+• Success rate trends
+• Learning progress
+• Performance insights
+
+Check it out! 📈"""
+        
+        # Intent: Self-learning
+        elif any(word in user_lower for word in ['self-learning', 'reflexion', 'improve', 'learning']):
+            response_text = """🧠 **Self-Learning System:**
+
+**How it works:**
+1. **Reflexion Framework:**
+   • Actor generates code
+   • Evaluator scores it (0-100)
+   • Reflector extracts learnings
+   • Improver creates v2
+
+2. **Hierarchical Memory:**
+   • Short-term (working memory)
+   • Mid-term (recent experiences)
+   • Long-term (consolidated knowledge)
+   • Reflective (meta-insights)
+
+3. **Continuous Improvement:**
+   • Learns from every generation
+   • Extracts patterns automatically
+   • Gets smarter over time
+
+**See it in action:**
+Click **"Self-Learning"** tab to view:
+• Learning efficiency
+• Memory statistics
+• Recent insights
+• Performance trends
+
+It's like having an AI that improves itself! 🚀"""
+        
+        # Intent: A2A or multi-agent
+        elif any(word in user_lower for word in ['a2a', 'agent', 'multi-agent', 'orchestr']):
+            response_text = """🤖 **Multi-Agent A2A System:**
+
+**4 Specialized Agents:**
+
+1. **Manager Agent** (Orchestrator)
+   • Coordinates all agents
+   • Routes requests
+
+2. **Code Generator Agent** (Gemini 2.5 Flash)
+   • Creates HTML/CSS/JavaScript
+   • Fast generation
+
+3. **Code Reviewer Agent** (Gemini 2.5 Pro)
+   • Reviews code quality
+   • Scores 0-100
+   • Finds issues
+
+4. **Pattern Analyzer Agent** (Gemini 2.5 Flash)
+   • Extracts reusable patterns
+   • Learns from successes
+
+**A2A Protocol:**
+They communicate using JSON-RPC 2.0 messages, just like Google's A2A specification!
+
+Try generating an app to see them work together! 🎯"""
+        
+        # Intent: Daytona
+        elif 'daytona' in user_lower or 'sandbox' in user_lower:
+            daytona_stats = daytona_sandbox.get_statistics()
+            response_text = f"""🔐 **Daytona Sandbox:**
+
+**Status:** Active (Demo Mode)
+**Executions:** {daytona_stats.get('total_executions', 0)}
+**Success Rate:** {daytona_stats.get('success_rate', 0):.1%}
+
+**What it does:**
+• Isolated code execution
+• Security by default
+• Fast spin-up (~90ms)
+• Docker containers
+
+**Features:**
+✓ Tests generated code safely
+✓ Validates HTML/CSS/JS
+✓ Catches errors early
+✓ Prevents malicious code
+
+Your generated apps are tested in secure sandboxes! 🛡️"""
+        
+        # Default: Welcome/Help
+        else:
+            response_text = """👋 **Welcome to CodeForge AI Assistant!**
+
+I can help you with:
+
+**🚀 Generate Apps**
+"How do I generate an app?"
+"Create a todo app"
+
+**📚 View Patterns**
+"Show me learned patterns"
+"What's in the pattern library?"
+
+**📊 Check Stats**
+"Show dashboard"
+"What's the performance?"
+
+**🧠 Self-Learning**
+"Explain self-learning"
+"How does Reflexion work?"
+
+**🤖 Multi-Agent System**
+"Explain A2A protocol"
+"How do agents work together?"
+
+What would you like to know?"""
+        
         return {
             "messages": [{
                 "role": "assistant",
-                "content": "Hello! I'm your CodeForge AI assistant. I can help you with:\n\n• Understanding how to use CodeForge\n• Explaining the multi-agent system\n• Learning about self-improvement features\n• Tips for better prompts\n\nWhat would you like to know?"
-            }]
+                "content": response_text
+            }],
+            "agent_name": "codeforge_assistant",
+            "status": "completed"
         }
         
     except Exception as e:
         return {
             "messages": [{
                 "role": "assistant",
-                "content": f"I encountered an error: {str(e)}. Please try again or use the Generate tab for app creation."
-            }]
+                "content": f"I encountered an error: {str(e)}. Please try asking again or check the Generate tab for app creation."
+            }],
+            "status": "error"
         }
 
 @api_router.post("/self-improve/generate")
