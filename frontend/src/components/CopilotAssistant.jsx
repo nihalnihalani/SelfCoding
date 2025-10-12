@@ -2,11 +2,42 @@ import { CopilotChat } from "@copilotkit/react-ui";
 import { useCopilotAction, useCopilotReadable } from "@copilotkit/react-core";
 import { useState, useEffect } from "react";
 import { Button } from "./ui/button";
-import { Bot, X } from "lucide-react";
+import { Bot, X, Sparkles } from "lucide-react";
+import axios from "axios";
+import { toast } from "sonner";
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const CopilotAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [generatedApps, setGeneratedApps] = useState([]);
+  const [systemStats, setSystemStats] = useState(null);
+
+  // Load system stats
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [metricsRes, patternsRes] = await Promise.all([
+          axios.get(`${API}/metrics`),
+          axios.get(`${API}/patterns`)
+        ]);
+        setSystemStats({
+          metrics: metricsRes.data,
+          patterns: patternsRes.data
+        });
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    };
+    loadStats();
+  }, []);
+
+  // Make system stats readable to Copilot
+  useCopilotReadable({
+    description: "CodeForge system statistics and performance metrics",
+    value: systemStats,
+  });
 
   // Make app generation history readable to Copilot
   useCopilotReadable({
@@ -14,22 +45,123 @@ const CopilotAssistant = () => {
     value: generatedApps,
   });
 
-  // Define action for app generation
+  // Action 1: Generate App
   useCopilotAction({
     name: "generate_app",
-    description: "Generate a web application based on user description",
+    description: "Generate a complete web application with HTML, CSS, and JavaScript",
     parameters: [
       {
         name: "description",
         type: "string",
-        description: "Description of the app to generate",
+        description: "Detailed description of the app to generate",
         required: true,
       },
     ],
     handler: async ({ description }) => {
-      console.log("Generating app:", description);
-      setGeneratedApps(prev => [...prev, { description, timestamp: new Date() }]);
-      return `App generation initiated for: ${description}`;
+      try {
+        toast.info("Starting app generation...");
+        
+        const response = await axios.post(`${API}/generate`, {
+          description,
+          use_thinking: true,
+          auto_test: false,
+          max_iterations: 1
+        }, { timeout: 60000 });
+        
+        if (response.data.success) {
+          setGeneratedApps(prev => [...prev, { 
+            description, 
+            timestamp: new Date(),
+            files: Object.keys(response.data.files || {})
+          }]);
+          
+          toast.success("App generated successfully!");
+          
+          return `✅ Successfully generated app!\n\nFiles created: ${Object.keys(response.data.files || {}).join(', ')}\n\nTime taken: ${response.data.time_taken?.toFixed(1)}s\n\nYou can view the code in the Generate tab!`;
+        } else {
+          return `❌ Generation failed: ${response.data.error}`;
+        }
+      } catch (error) {
+        const errorMsg = error.response?.data?.detail || error.message;
+        toast.error(`Generation failed: ${errorMsg}`);
+        return `❌ Error generating app: ${errorMsg}`;
+      }
+    },
+  });
+
+  // Action 2: Get Pattern Library Stats
+  useCopilotAction({
+    name: "check_patterns",
+    description: "Check the pattern library and learned patterns",
+    parameters: [],
+    handler: async () => {
+      try {
+        const response = await axios.get(`${API}/patterns`);
+        const patterns = response.data;
+        
+        if (patterns.length === 0) {
+          return "📚 No patterns learned yet. Generate some apps to build the library!";
+        }
+        
+        return `📚 Pattern Library:\n\n${patterns.length} patterns learned!\n\nTop patterns:\n${patterns.slice(0, 3).map((p, i) => 
+          `${i + 1}. ${p.description} (used ${p.usage_count} times)`
+        ).join('\n')}\n\nView all patterns in the Pattern Library tab!`;
+      } catch (error) {
+        return `Error fetching patterns: ${error.message}`;
+      }
+    },
+  });
+
+  // Action 3: Get Dashboard Metrics
+  useCopilotAction({
+    name: "show_metrics",
+    description: "Show performance metrics and dashboard statistics",
+    parameters: [],
+    handler: async () => {
+      try {
+        const response = await axios.get(`${API}/metrics`);
+        const metrics = response.data;
+        
+        return `📊 CodeForge Metrics:\n\n✓ Total Apps: ${metrics.total_apps}\n✓ Successful: ${metrics.successful_apps}\n✓ Success Rate: ${(metrics.success_rate * 100).toFixed(1)}%\n✓ Patterns Learned: ${metrics.pattern_count}\n✓ Failed Attempts: ${metrics.failed_attempts}\n\nView detailed charts in the Dashboard tab!`;
+      } catch (error) {
+        return `Error fetching metrics: ${error.message}`;
+      }
+    },
+  });
+
+  // Action 4: Get Self-Learning Report
+  useCopilotAction({
+    name: "check_learning",
+    description: "Check self-learning system status and learning efficiency",
+    parameters: [],
+    handler: async () => {
+      try {
+        const response = await axios.get(`${API}/self-learning/report`);
+        const report = response.data;
+        
+        const efficiency = report.learning_efficiency || {};
+        
+        let result = `🧠 Self-Learning System:\n\n`;
+        result += `Improvement Cycles: ${report.improvement_cycles_completed}\n`;
+        
+        if (efficiency.status !== 'insufficient_data') {
+          result += `\nLearning Efficiency:\n`;
+          result += `• Status: ${efficiency.status}\n`;
+          result += `• Early Avg: ${efficiency.early_average?.toFixed(1)}\n`;
+          result += `• Recent Avg: ${efficiency.recent_average?.toFixed(1)}\n`;
+          result += `• Improvement: ${efficiency.improvement >= 0 ? '+' : ''}${efficiency.improvement?.toFixed(1)}\n`;
+        }
+        
+        if (report.recommendations && report.recommendations.length > 0) {
+          result += `\nRecommendations:\n${report.recommendations.slice(0, 3).map(r => `• ${r}`).join('\n')}`;
+        }
+        
+        result += `\n\nView detailed analytics in the Self-Learning tab!`;
+        
+        return result;
+      } catch (error) {
+        return `Error fetching learning report: ${error.message}`;
+      }
     },
   });
 
