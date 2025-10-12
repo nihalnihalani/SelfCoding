@@ -82,7 +82,22 @@ const Generator = () => {
         max_iterations: maxIterations,
       };
 
-      const response = await axios.post(`${API}/generate`, request);
+      // Simulate progress updates
+      const progressInterval = setInterval(() => {
+        setProgress(prev => {
+          if (prev < 90) return prev + 10;
+          return prev;
+        });
+      }, 1000);
+
+      setStatusMessage('💻 Generating code with AI...');
+
+      const response = await axios.post(`${API}/generate`, request, {
+        timeout: 120000 // 2 minutes
+      });
+      
+      clearInterval(progressInterval);
+      
       setResult(response.data);
       setProgress(100);
       setStatusMessage('✅ Generation complete!');
