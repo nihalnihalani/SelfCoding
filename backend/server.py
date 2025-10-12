@@ -417,11 +417,24 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 # Routes
 @api_router.get("/")
 async def root():
+    daytona_stats = daytona_sandbox.get_statistics()
     return {
-        "message": "CodeForge API with A2A Protocol",
+        "message": "CodeForge API with A2A Protocol + Daytona Sandbox",
         "status": "running",
-        "version": "2.0.0",
-        "features": ["multi-agent", "a2a-protocol", "copilotkit-ready"]
+        "version": "3.0.0",
+        "features": [
+            "multi-agent", 
+            "a2a-protocol", 
+            "copilotkit-ready",
+            "self-learning",
+            "reflexion-framework",
+            "daytona-sandbox"
+        ],
+        "daytona": {
+            "enabled": True,
+            "mode": "demo" if daytona_sandbox.api_key == "demo-mode" else "production",
+            "active_sandboxes": daytona_stats.get('active_sandboxes', 0)
+        }
     }
 
 @api_router.get("/agents")
