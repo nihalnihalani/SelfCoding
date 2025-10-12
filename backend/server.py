@@ -645,22 +645,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-@api_router.api_route("/copilotkit", methods=["GET", "POST"])
-async def copilotkit_runtime(request: dict = None):
+@api_router.get("/copilotkit")
+async def copilotkit_health():
+    """CopilotKit health check endpoint."""
+    return {
+        "status": "ok",
+        "agent": "codeforge_manager",
+        "capabilities": ["chat", "generate_app"]
+    }
+
+@api_router.post("/copilotkit")
+async def copilotkit_runtime(request: Request):
     """CopilotKit runtime endpoint - AG UI protocol compatible."""
     
-    # Handle GET request for health check
-    if request is None:
-        return {
-            "status": "ok",
-            "agent": "codeforge_manager",
-            "capabilities": ["generate_app", "chat"]
-        }
-    
     try:
+        # Parse request body
+        body = await request.json()
+        
         # Extract action and messages from request
-        action = request.get('action', '')
-        messages = request.get('messages', [])
+        action = body.get('action', '')
+        messages = body.get('messages', [])
         
         # Get last user message
         user_message = ''
