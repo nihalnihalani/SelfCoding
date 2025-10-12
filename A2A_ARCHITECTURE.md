@@ -341,10 +341,10 @@ Manager tracks:
 
 ```bash
 # List available agents
-curl https://codeforge-87.preview.emergentagent.com/api/agents
+curl https://self-improving-dev.preview.emergentagent.com/api/agents
 
 # Call Manager Agent
-curl -X POST https://codeforge-87.preview.emergentagent.com/api/agents/manager \
+curl -X POST https://self-improving-dev.preview.emergentagent.com/api/agents/manager \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -359,7 +359,7 @@ curl -X POST https://codeforge-87.preview.emergentagent.com/api/agents/manager \
 ```
 
 ### Use CopilotKit Interface
-1. Open https://codeforge-87.preview.emergentagent.com
+1. Open https://self-improving-dev.preview.emergentagent.com
 2. Click the floating AI Assistant button
 3. Chat with the multi-agent system
 4. Request app generation via natural language
