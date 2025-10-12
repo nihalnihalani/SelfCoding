@@ -148,15 +148,15 @@ def store_failure(description: str, error: str, code: Optional[Dict] = None):
     """Store failed generation."""
     failure_id = f"failure_{datetime.now().timestamp()}"
     
-    failure_collection.add(
-        documents=[description],
-        metadatas=[{
-            'error': error,
-            'timestamp': datetime.now().isoformat(),
-            'code_snippet': str(code)[:500] if code else ''
-        }],
-        ids=[failure_id]
-    )
+    failure = {
+        'id': failure_id,
+        'description': description,
+        'error': error,
+        'timestamp': datetime.now().isoformat(),
+        'code_snippet': str(code)[:500] if code else ''
+    }
+    
+    failure_patterns_db.append(failure)
     
     generation_history.append({
         'timestamp': datetime.now(),
