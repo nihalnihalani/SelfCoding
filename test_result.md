@@ -178,10 +178,11 @@ metadata:
 test_plan:
   current_focus:
     - "Fix CopilotKit Mixed Content Error"
+    - "Fix /api/generate endpoint timeout issue"
     - "Test frontend actions functionality"
-    - "Verify backend API endpoints"
   stuck_tasks:
     - "CopilotKit SDK Integration - Mixed Content HTTPS/HTTP issue"
+    - "API Endpoints (/api/generate, /api/patterns, /api/metrics) - Generate endpoint timeout"
   test_all: false
   test_priority: "stuck_first"
 
