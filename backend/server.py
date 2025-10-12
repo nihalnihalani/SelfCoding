@@ -646,56 +646,63 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 @api_router.post("/copilotkit")
-async def copilotkit_runtime(request: dict):
-    """CopilotKit runtime endpoint for AG UI protocol."""
+@api_router.get("/copilotkit")
+async def copilotkit_runtime(request: dict = None):
+    """CopilotKit runtime endpoint - AG UI protocol compatible."""
+    
+    # Handle GET request for health check
+    if request is None:
+        return {
+            "status": "ok",
+            "agent": "codeforge_manager",
+            "capabilities": ["generate_app", "chat"]
+        }
+    
     try:
-        # Extract action from request
-        action = request.get('action')
+        # Extract action and messages from request
+        action = request.get('action', '')
         messages = request.get('messages', [])
         
-        if action == 'generate_app':
-            # Get last user message
-            user_message = messages[-1].get('content', '') if messages else ''
-            
-            # Use A2A agent for generation
-            a2a_message = A2AMessage(
-                method="generate_and_review",
-                params={
-                    "description": user_message,
-                    "patterns": retrieve_similar_patterns(user_message, n=2),
-                    "auto_review": True
-                }
-            )
-            
-            response = await manager_agent.process_message(a2a_message)
-            
-            if response.error:
-                return {
-                    "response": f"Error: {response.error.get('message')}",
-                    "metadata": {"error": True}
-                }
-            
-            result = response.result
-            
+        # Get last user message
+        user_message = ''
+        if messages:
+            for msg in reversed(messages):
+                if msg.get('role') == 'user':
+                    user_message = msg.get('content', '')
+                    break
+        
+        # If no specific action, treat as chat
+        if not action or action == 'chat':
             return {
-                "response": f"Generated app successfully! Files: {list(result.get('files', {}).keys())}",
-                "data": result,
-                "metadata": {
-                    "success": True,
-                    "agent": "a2a-manager"
-                }
+                "messages": [{
+                    "role": "assistant",
+                    "content": f"I can help you generate web applications! Just describe what you want to build. For example: 'Create a todo list app with dark mode'"
+                }]
             }
         
-        # Default chat response
+        # Handle app generation action
+        if action == 'generate_app' and user_message:
+            return {
+                "messages": [{
+                    "role": "assistant", 
+                    "content": f"I'll generate that app for you! Please use the Generate tab for full functionality. For now, I can help answer questions about CodeForge's features:\n\n🤖 Multi-Agent System\n🧠 Self-Learning with Reflexion\n🔐 Daytona Sandbox\n📚 Pattern Library\n\nWhat would you like to know?"
+                }]
+            }
+        
+        # Default response
         return {
-            "response": "I can help you generate web applications! Just describe what you want to build.",
-            "metadata": {"available_actions": ["generate_app"]}
+            "messages": [{
+                "role": "assistant",
+                "content": "Hello! I'm your CodeForge AI assistant. I can help you with:\n\n• Understanding how to use CodeForge\n• Explaining the multi-agent system\n• Learning about self-improvement features\n• Tips for better prompts\n\nWhat would you like to know?"
+            }]
         }
         
     except Exception as e:
         return {
-            "response": f"Error: {str(e)}",
-            "metadata": {"error": True}
+            "messages": [{
+                "role": "assistant",
+                "content": f"I encountered an error: {str(e)}. Please try again or use the Generate tab for app creation."
+            }]
         }
 
 @api_router.post("/self-improve/generate")
