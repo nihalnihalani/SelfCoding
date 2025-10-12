@@ -28,6 +28,9 @@ db = client[os.environ['DB_NAME']]
 success_patterns_db = []
 failure_patterns_db = []
 
+# Initialize A2A Manager Agent
+manager_agent = ManagerAgent()
+
 # Models
 class GenerationRequest(BaseModel):
     description: str
