@@ -639,6 +639,69 @@ async def get_metrics():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/copilotkit")
+@api_router.post("/copilotkit/")
+async def copilotkit_chat(request: Request):
+    """Simple CopilotKit endpoint for chat responses - no SDK required."""
+    try:
+        body = await request.json()
+        messages = body.get('messages', [])
+        
+        # Get the last user message
+        user_message = ""
+        for msg in reversed(messages):
+            if msg.get('role') == 'user':
+                content = msg.get('content', '')
+                if isinstance(content, str):
+                    user_message = content
+                elif isinstance(content, list):
+                    # Handle structured content
+                    for item in content:
+                        if isinstance(item, dict) and item.get('type') == 'text':
+                            user_message = item.get('text', '')
+                            break
+                if user_message:
+                    break
+        
+        if not user_message:
+            user_message = "hello"
+        
+        # Simple conversational response
+        user_lower = user_message.lower()
+        
+        if any(word in user_lower for word in ['metric', 'performance', 'stat', 'dashboard']):
+            total = len(generation_history)
+            success = sum(1 for g in generation_history if g.get('success'))
+            rate = (success / total * 100) if total > 0 else 0
+            response_text = f"📊 **Performance Metrics:**\n\n• Total Apps: {total}\n• Successful: {success}\n• Success Rate: {rate:.1f}%\n• Patterns: {len(success_patterns_db)}\n\nView full details in the Dashboard tab!"
+        
+        elif any(word in user_lower for word in ['pattern', 'library', 'learn']):
+            count = len(success_patterns_db)
+            response_text = f"📚 **Pattern Library:**\n\n{count} patterns learned so far!\n\nPatterns help CodeForge remember successful code structures and reuse them. Check the Pattern Library tab to see all patterns!"
+        
+        elif any(word in user_lower for word in ['generate', 'create', 'build']):
+            response_text = "🚀 **Generate Apps:**\n\nI can help you build web applications! Just:\n\n1. Go to the **Generate** tab\n2. Describe your app\n3. Click **Generate App**\n\nI'll create HTML, CSS, and JavaScript for you in seconds!"
+        
+        else:
+            response_text = f"👋 Hi! I'm your CodeForge assistant.\n\nAsk me about:\n• 📊 Metrics and performance\n• 📚 Pattern library  \n• 🚀 How to generate apps\n\nWhat would you like to know?"
+        
+        # Return in CopilotKit expected format
+        return {
+            "messages": [{
+                "role": "assistant",
+                "content": response_text
+            }]
+        }
+        
+    except Exception as e:
+        logger.error(f"CopilotKit endpoint error: {str(e)}")
+        return {
+            "messages": [{
+                "role": "assistant",
+                "content": "I encountered an error. Please try again or use the tabs above to access features directly."
+            }]
+        }
+
 # OLD CopilotKit endpoint - replaced with SDK-based implementation
 # @api_router.post("/copilotkit")
 # async def copilotkit_runtime(request: Request):
