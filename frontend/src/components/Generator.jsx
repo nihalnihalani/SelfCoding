@@ -234,6 +234,28 @@ const Generator = () => {
                     </p>
                   )}
                   <p className="text-green-700 text-sm">⏱️ Time taken: {result.time_taken.toFixed(2)}s</p>
+                  
+                  {/* A2A Multi-Agent Info */}
+                  {result.metadata?.orchestrated_by && (
+                    <div className="mt-3 pt-3 border-t border-green-200">
+                      <p className="text-green-800 font-medium text-sm mb-2">🤖 Multi-Agent Workflow:</p>
+                      <div className="space-y-1">
+                        {result.metadata?.workflow_log?.map((log, idx) => (
+                          <p key={idx} className="text-green-700 text-xs">
+                            • {log.step}: {log.status} {log.quality_score && `(Score: ${log.quality_score})`}
+                          </p>
+                        ))}
+                      </div>
+                      {result.metadata?.code_review && (
+                        <div className="mt-2 p-2 bg-green-100 rounded">
+                          <p className="text-green-800 text-xs font-medium">
+                            📋 Code Review: Quality Score {result.metadata.code_review.quality_score}/100
+                            {result.metadata.code_review.approved ? " ✓ Approved" : " ⚠ Needs Attention"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </CardContent>
