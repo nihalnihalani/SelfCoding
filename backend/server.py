@@ -13,9 +13,6 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from emergentintegrations.llm.chat import LlmChat, UserMessage
-import chromadb
-from chromadb.config import Settings as ChromaSettings
-
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -24,21 +21,9 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-# Initialize ChromaDB for pattern storage
-chroma_client = chromadb.Client(ChromaSettings(
-    persist_directory=str(ROOT_DIR / "data" / "patterns"),
-    anonymized_telemetry=False
-))
-
-try:
-    success_collection = chroma_client.get_collection("successful_patterns")
-except:
-    success_collection = chroma_client.create_collection("successful_patterns")
-
-try:
-    failure_collection = chroma_client.get_collection("failed_patterns")
-except:
-    failure_collection = chroma_client.create_collection("failed_patterns")
+# In-memory pattern storage (simple implementation)
+success_patterns_db = []
+failure_patterns_db = []
 
 # Models
 class GenerationRequest(BaseModel):
