@@ -769,6 +769,48 @@ async def get_memory_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.post("/daytona/execute")
+async def daytona_execute_code(request: dict):
+    """Execute code in Daytona sandbox."""
+    try:
+        code = request.get('code')
+        language = request.get('language', 'javascript')
+        
+        if not code:
+            raise HTTPException(status_code=400, detail="Code is required")
+        
+        result = await daytona_sandbox.execute_code(code, language)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/daytona/test")
+async def daytona_test_files(request: dict):
+    """Test generated code files in Daytona sandbox."""
+    try:
+        files = request.get('files', {})
+        
+        if not files:
+            raise HTTPException(status_code=400, detail="Files are required")
+        
+        result = await daytona_sandbox.test_generated_code(files)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/daytona/stats")
+async def get_daytona_stats():
+    """Get Daytona sandbox statistics."""
+    try:
+        stats = daytona_sandbox.get_statistics()
+        return {
+            **stats,
+            "mode": "demo" if daytona_sandbox.api_key == "demo-mode" else "production",
+            "info": "Daytona provides isolated, secure sandbox execution for AI-generated code"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
