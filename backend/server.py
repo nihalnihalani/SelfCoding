@@ -638,9 +638,10 @@ async def get_metrics():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.post("/copilotkit")
-async def copilotkit_runtime(request: Request):
-    """CopilotKit runtime endpoint - Full AG-UI protocol implementation."""
+# OLD CopilotKit endpoint - replaced with SDK-based implementation
+# @api_router.post("/copilotkit")
+# async def copilotkit_runtime(request: Request):
+#     """CopilotKit runtime endpoint - Full AG-UI protocol implementation."""
     
     try:
         body = await request.json()
