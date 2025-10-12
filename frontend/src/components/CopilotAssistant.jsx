@@ -10,7 +10,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const CopilotAssistant = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true); // Start open by default
   const [generatedApps, setGeneratedApps] = useState([]);
   const [systemStats, setSystemStats] = useState(null);
 
@@ -165,15 +165,10 @@ const CopilotAssistant = () => {
     },
   });
 
+  // Don't auto-close anymore
   useEffect(() => {
-    // Auto-open on first visit
-    const hasVisited = localStorage.getItem('copilot_visited');
-    if (!hasVisited) {
-      setTimeout(() => {
-        setIsOpen(true);
-        localStorage.setItem('copilot_visited', 'true');
-      }, 2000);
-    }
+    // Keep chat open by default
+    setIsOpen(true);
   }, []);
 
   return (
@@ -201,7 +196,7 @@ const CopilotAssistant = () => {
               <Bot className="h-6 w-6 text-white" />
               <div>
                 <h3 className="text-white font-semibold">AI Assistant</h3>
-                <p className="text-indigo-100 text-xs">Powered by A2A Multi-Agent System</p>
+                <p className="text-indigo-100 text-xs">Powered by Multi-Agent System</p>
               </div>
             </div>
             <Button
@@ -220,7 +215,7 @@ const CopilotAssistant = () => {
             <CopilotChat
               labels={{
                 title: "CodeForge Assistant",
-                initial: "Hi! I'm your AI coding assistant. I can help you generate web applications using our multi-agent system. Just describe what you want to build!",
+                initial: "Hi! 👋 I'm your AI coding assistant.\n\nAsk me about:\n• 📊 System metrics\n• 📚 Pattern library\n• 🚀 How to generate apps\n\nTry: 'Show me metrics' or 'Check patterns'",
               }}
             />
           </div>
