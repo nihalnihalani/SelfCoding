@@ -645,8 +645,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-@api_router.post("/copilotkit")
-@api_router.get("/copilotkit")
+@api_router.api_route("/copilotkit", methods=["GET", "POST"])
 async def copilotkit_runtime(request: dict = None):
     """CopilotKit runtime endpoint - AG UI protocol compatible."""
     
