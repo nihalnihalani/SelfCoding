@@ -81,6 +81,20 @@ function App() {
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600"></div>
               )}
             </button>
+            <button
+              data-testid="nav-self-learning"
+              onClick={() => setActiveTab('self-learning')}
+              className={`py-4 px-6 font-semibold text-sm transition-all duration-200 relative ${
+                activeTab === 'self-learning'
+                  ? 'text-indigo-600'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="relative z-10">🧠 Self-Learning</span>
+              {activeTab === 'self-learning' && (
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-600 to-purple-600"></div>
+              )}
+            </button>
           </div>
         </div>
       </nav>
