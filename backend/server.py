@@ -976,9 +976,10 @@ async def get_daytona_stats():
 # Include all API routes
 app.include_router(api_router)
 
-# Set up CopilotKit SDK integration
-set_data_refs(success_patterns_db, failure_patterns_db, generation_history)
-setup_copilotkit(app)
+# CopilotKit SDK integration temporarily disabled due to HTTPS/HTTP mixed content issues
+# Will use simpler approach with direct endpoint
+# set_data_refs(success_patterns_db, failure_patterns_db, generation_history)
+# setup_copilotkit(app)
 
 # Logging configuration
 logging.basicConfig(
