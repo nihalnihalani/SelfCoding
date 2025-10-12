@@ -665,11 +665,11 @@ async def copilotkit_runtime(request: dict):
             
             # Use A2A agent for generation
             a2a_message = A2AMessage(
-                method=\"generate_and_review\",
+                method="generate_and_review",
                 params={
-                    \"description\": user_message,
-                    \"patterns\": retrieve_similar_patterns(user_message, n=2),
-                    \"auto_review\": True
+                    "description": user_message,
+                    "patterns": retrieve_similar_patterns(user_message, n=2),
+                    "auto_review": True
                 }
             )
             
@@ -677,31 +677,31 @@ async def copilotkit_runtime(request: dict):
             
             if response.error:
                 return {
-                    \"response\": f\"Error: {response.error.get('message')}\",
-                    \"metadata\": {\"error\": True}
+                    "response": f"Error: {response.error.get('message')}",
+                    "metadata": {"error": True}
                 }
             
             result = response.result
             
             return {
-                \"response\": f\"Generated app successfully! Files: {list(result.get('files', {}).keys())}\",
-                \"data\": result,
-                \"metadata\": {
-                    \"success\": True,
-                    \"agent\": \"a2a-manager\"
+                "response": f"Generated app successfully! Files: {list(result.get('files', {}).keys())}",
+                "data": result,
+                "metadata": {
+                    "success": True,
+                    "agent": "a2a-manager"
                 }
             }
         
         # Default chat response
         return {
-            \"response\": \"I can help you generate web applications! Just describe what you want to build.\",
-            \"metadata\": {\"available_actions\": [\"generate_app\"]}
+            "response": "I can help you generate web applications! Just describe what you want to build.",
+            "metadata": {"available_actions": ["generate_app"]}
         }
         
     except Exception as e:
         return {
-            \"response\": f\"Error: {str(e)}\",
-            \"metadata\": {\"error\": True}
+            "response": f"Error: {str(e)}",
+            "metadata": {"error": True}
         }
 
 @app.on_event(\"shutdown\")
