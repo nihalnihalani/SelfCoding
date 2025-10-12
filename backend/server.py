@@ -413,10 +413,52 @@ async def websocket_endpoint(websocket: WebSocket, client_id: str):
 @api_router.get("/")
 async def root():
     return {
-        "message": "CodeForge API",
+        "message": "CodeForge API with A2A Protocol",
         "status": "running",
-        "version": "1.0.0"
+        "version": "2.0.0",
+        "features": ["multi-agent", "a2a-protocol", "copilotkit-ready"]
     }
+
+@api_router.get("/agents")
+async def list_agents():
+    """List all available A2A agents."""
+    return {
+        "agents": [
+            manager_agent.get_agent_card().dict(),
+            manager_agent.code_generator.get_agent_card().dict(),
+            manager_agent.code_reviewer.get_agent_card().dict(),
+            manager_agent.pattern_analyzer.get_agent_card().dict()
+        ]
+    }
+
+@api_router.post("/agents/{agent_name}")
+async def call_agent(agent_name: str, message: dict):
+    """A2A Protocol endpoint for agent communication."""
+    try:
+        a2a_message = A2AMessage(**message)
+        
+        # Route to appropriate agent
+        if agent_name == "manager":
+            response = await manager_agent.process_message(a2a_message)
+        elif agent_name == "code_generator":
+            response = await manager_agent.code_generator.process_message(a2a_message)
+        elif agent_name == "code_reviewer":
+            response = await manager_agent.code_reviewer.process_message(a2a_message)
+        elif agent_name == "pattern_analyzer":
+            response = await manager_agent.pattern_analyzer.process_message(a2a_message)
+        else:
+            return {"error": "Agent not found"}, 404
+        
+        return response.dict()
+    except Exception as e:
+        return {
+            "jsonrpc": "2.0",
+            "error": {
+                "code": -32603,
+                "message": str(e)
+            },
+            "id": message.get('id')
+        }
 
 @api_router.post("/generate", response_model=GenerationResponse)
 async def generate_app_endpoint(request: GenerationRequest):
