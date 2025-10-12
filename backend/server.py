@@ -802,6 +802,16 @@ async def get_daytona_stats():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+# Include all API routes
+app.include_router(api_router)
+
+# Logging configuration
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
