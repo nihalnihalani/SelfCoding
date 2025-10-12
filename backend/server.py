@@ -342,16 +342,29 @@ Return ONLY valid JSON:
             
             response = await code_chat.send_message(UserMessage(text=prompt))
             
-            # Clean and parse
+            # Clean response - remove markdown code blocks
             response_text = response.strip()
-            if response_text.startswith('```json'):
-                response_text = response_text[7:]
-            if response_text.startswith('```'):
-                response_text = response_text[3:]
-            if response_text.endswith('```'):
-                response_text = response_text[:-3]
             
-            result = json.loads(response_text.strip())
+            # Remove markdown code block markers
+            if '```json' in response_text:
+                response_text = response_text.split('```json')[1]
+                if '```' in response_text:
+                    response_text = response_text.split('```')[0]
+            elif '```' in response_text:
+                response_text = response_text.split('```')[1]
+                if '```' in response_text:
+                    response_text = response_text.split('```')[0]
+            
+            response_text = response_text.strip()
+            
+            result = json.loads(response_text)
+            
+            # Validate structure
+            if 'files' not in result or not isinstance(result['files'], dict):
+                return {
+                    'success': False,
+                    'error': "Invalid response structure: missing 'files' dictionary"
+                }
             
             return {
                 'success': True,
