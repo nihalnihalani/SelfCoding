@@ -639,6 +639,55 @@ async def get_metrics():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/self-learning/comprehensive-report")
+async def get_comprehensive_learning_report():
+    """Get comprehensive learning report with advanced analytics."""
+    try:
+        report = await self_improvement_engine.generate_comprehensive_learning_report()
+        return report
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/self-learning/curriculum-analytics")
+async def get_curriculum_analytics():
+    """Get curriculum learning analytics."""
+    try:
+        analytics = self_improvement_engine.curriculum.get_learning_analytics()
+        return analytics
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/self-learning/meta-insights")
+async def get_meta_learning_insights():
+    """Get meta-learning insights."""
+    try:
+        insights = await self_improvement_engine.meta_learner.generate_meta_insights()
+        return insights
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/self-learning/next-task")
+async def get_next_adaptive_task():
+    """Get next adaptive task suggestion."""
+    try:
+        task = await self_improvement_engine.get_adaptive_task_suggestion()
+        return {"suggested_task": task}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/self-learning/record-outcome")
+async def record_learning_outcome(outcome: dict):
+    """Record a learning outcome for meta-learning."""
+    try:
+        await self_improvement_engine.learn_from_generation(
+            task=outcome.get('task', ''),
+            result=outcome.get('result', {}),
+            external_feedback=outcome.get('feedback')
+        )
+        return {"status": "recorded"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/copilotkit")
 @api_router.post("/copilotkit/")
 async def copilotkit_chat(request: Request):
@@ -1053,6 +1102,9 @@ app.include_router(api_router)
 # set_data_refs(success_patterns_db, failure_patterns_db, generation_history)
 # setup_copilotkit(app)
 
+# Mount API router
+app.include_router(api_router)
+
 # Logging configuration
 logging.basicConfig(
     level=logging.INFO,
@@ -1063,3 +1115,7 @@ logger = logging.getLogger(__name__)
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

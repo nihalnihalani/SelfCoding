@@ -1,1 +1,1 @@
-# Integrations module for external services
+# Integrations module
