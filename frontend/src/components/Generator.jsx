@@ -158,6 +158,30 @@ const Generator = () => {
       
       clearInterval(progressInterval);
       
+      // Test with Daytona if autoTest is enabled (via backend API)
+      if (autoTest && response.data.success && response.data.files) {
+        setStatusMessage('🔒 Testing code in Daytona sandbox...');
+        setProgress(95);
+        
+        try {
+          const testResponse = await axios.post(`${API}/daytona/test`, {
+            files: response.data.files
+          });
+          
+          // Add test results to response data
+          response.data.daytonaTestResults = testResponse.data;
+          
+          if (testResponse.data.success) {
+            toast.success('✅ Code passed Daytona sandbox tests!');
+          } else {
+            toast.warning('⚠️ Code generated but failed sandbox tests');
+          }
+        } catch (testError) {
+          console.error('Daytona test error:', testError);
+          toast.warning('Daytona test skipped: ' + (testError.response?.data?.detail || testError.message));
+        }
+      }
+      
       setResult(response.data);
       setProgress(100);
       setStatusMessage('✅ Generation complete!');
@@ -605,6 +629,53 @@ const Generator = () => {
                 >
                   {result.deployed_url}
                 </a>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Daytona Test Results */}
+          {result.daytonaTestResults && result.daytonaTestResults.testResults && (
+            <Card className={`border-2 ${result.daytonaTestResults.success ? 'border-green-500 bg-green-50 dark:bg-green-900/10' : 'border-yellow-500 bg-yellow-50 dark:bg-yellow-900/10'}`}>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center space-x-2">
+                  <span>🔒 Daytona Sandbox Test Results</span>
+                  {result.daytonaTestResults.success ? (
+                    <span className="text-green-600 dark:text-green-400 text-sm">✅ Passed</span>
+                  ) : (
+                    <span className="text-yellow-600 dark:text-yellow-400 text-sm">⚠️ Issues Found</span>
+                  )}
+                </CardTitle>
+                <CardDescription>Secure code execution verification</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-white dark:bg-slate-800 rounded border">
+                      <div className="text-sm text-slate-600 dark:text-slate-400">Syntax Check</div>
+                      <div className={`font-semibold ${result.daytonaTestResults.testResults?.syntaxCheck === 'passed' ? 'text-green-600' : 'text-red-600'}`}>
+                        {result.daytonaTestResults.testResults?.syntaxCheck || result.daytonaTestResults.testResults?.syntax_check || 'N/A'}
+                      </div>
+                    </div>
+                    <div className="p-3 bg-white dark:bg-slate-800 rounded border">
+                      <div className="text-sm text-slate-600 dark:text-slate-400">Runtime Check</div>
+                      <div className={`font-semibold ${result.daytonaTestResults.testResults?.runtimeCheck === 'passed' ? 'text-green-600' : 'text-red-600'}`}>
+                        {result.daytonaTestResults.testResults?.runtimeCheck || result.daytonaTestResults.testResults?.runtime_check || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                  {result.daytonaTestResults.testResults?.output && (
+                    <div className="p-3 bg-slate-900 text-green-400 rounded font-mono text-sm">
+                      <div className="text-xs text-slate-400 mb-1">Sandbox Output:</div>
+                      <pre className="whitespace-pre-wrap">{result.daytonaTestResults.testResults.output}</pre>
+                    </div>
+                  )}
+                  {result.daytonaTestResults.testResults?.error && (
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 rounded text-sm border border-red-200 dark:border-red-800">
+                      <div className="font-semibold mb-1">Error:</div>
+                      <pre className="whitespace-pre-wrap text-xs">{result.daytonaTestResults.testResults.error}</pre>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}

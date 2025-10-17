@@ -361,29 +361,70 @@ class SelfImprovementEngine:
         reflection_summary = self.advanced_reflexion.get_reflection_summary()
         efficiency_report = self.meta_learner.get_learning_efficiency_report()
         
+        # Ensure curriculum_analytics has proper structure
+        if curriculum_analytics.get('status') == 'no_data':
+            curriculum_analytics = {
+                "total_tasks_attempted": 0,
+                "mastered_tasks": 0,
+                "mastery_rate": 0.0,
+                "current_difficulty_level": "BEGINNER",
+                "focus_areas": [],
+                "learning_velocity_per_week": 0.0,
+                "next_recommended_tasks": []
+            }
+        
+        # Ensure meta_insights has proper structure
+        if meta_insights.get('status') == 'insufficient_data':
+            meta_insights = {
+                "strategy_performance": {},
+                "learning_trajectory": {
+                    "early_avg_quality": 0.0,
+                    "recent_avg_quality": 0.0,
+                    "improvement": 0.0
+                },
+                "domain_mastery": {}
+            }
+        
+        # Ensure reflection_summary has proper structure
+        if reflection_summary.get('status') == 'no_reflections':
+            reflection_summary = {
+                "total_reflections": 0,
+                "insights_by_type": {},
+                "average_confidence": 0.0,
+                "average_impact": 0.0,
+                "recent_confidence_trend": 0.0,
+                "most_recent_insights": []
+            }
+        
+        # Ensure efficiency_report has proper structure  
+        if efficiency_report.get('status') == 'no_data':
+            efficiency_report = {
+                "total_learning_time_minutes": 0,
+                "learning_velocity_per_hour": 0.0,
+                "time_efficiency": 0.0,
+                "strategy_efficiency": {}
+            }
+        
         # Calculate overall learning score
         overall_score = 0
         score_components = []
         
-        if curriculum_analytics.get('mastery_rate'):
-            mastery_component = curriculum_analytics['mastery_rate'] * 30
-            overall_score += mastery_component
-            score_components.append(f"Curriculum Mastery: {mastery_component:.1f}/30")
+        # Always add all score components (even if 0) for consistent UI
+        mastery_component = curriculum_analytics.get('mastery_rate', 0) * 30
+        overall_score += mastery_component
+        score_components.append(f"Curriculum Mastery: {mastery_component:.1f}/30")
         
-        if memory_stats.get('success_rate'):
-            memory_component = memory_stats['success_rate'] * 25
-            overall_score += memory_component
-            score_components.append(f"Memory Performance: {memory_component:.1f}/25")
+        memory_component = memory_stats.get('success_rate', 0) * 25
+        overall_score += memory_component
+        score_components.append(f"Memory Performance: {memory_component:.1f}/25")
         
-        if reflection_summary.get('average_confidence'):
-            reflection_component = reflection_summary['average_confidence'] * 20
-            overall_score += reflection_component
-            score_components.append(f"Reflection Quality: {reflection_component:.1f}/20")
+        reflection_component = reflection_summary.get('average_confidence', 0) * 20
+        overall_score += reflection_component
+        score_components.append(f"Reflection Quality: {reflection_component:.1f}/20")
         
-        if efficiency_report.get('learning_velocity_per_hour', 0) > 0:
-            velocity_component = min(25, efficiency_report['learning_velocity_per_hour'] * 5)
-            overall_score += velocity_component
-            score_components.append(f"Learning Velocity: {velocity_component:.1f}/25")
+        velocity_component = min(25, efficiency_report.get('learning_velocity_per_hour', 0) * 5)
+        overall_score += velocity_component
+        score_components.append(f"Learning Velocity: {velocity_component:.1f}/25")
         
         # Generate recommendations
         recommendations = []

@@ -19,6 +19,7 @@ const AdvancedSelfLearning = () => {
   const [comprehensiveReport, setComprehensiveReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeInsight, setActiveInsight] = useState(null);
+  const [isDemoData, setIsDemoData] = useState(false);
 
   useEffect(() => {
     loadComprehensiveData();
@@ -28,9 +29,21 @@ const AdvancedSelfLearning = () => {
 
   const loadComprehensiveData = async () => {
     try {
-      // This would call the new comprehensive learning report endpoint
+      // Call the comprehensive learning report endpoint
       const response = await axios.get(`${API}/self-learning/comprehensive-report`);
-      setComprehensiveReport(response.data);
+      
+      // If no real data, use mock data for demo purposes
+      const hasRealData = response.data.overall_learning_score > 0 || 
+                          response.data.improvement_cycles_completed > 0;
+      
+      if (!hasRealData) {
+        // Show mock data to demonstrate what the system will look like with usage
+        setComprehensiveReport(generateMockData());
+        setIsDemoData(true);
+      } else {
+        setComprehensiveReport(response.data);
+        setIsDemoData(false);
+      }
       setLoading(false);
     } catch (error) {
       console.error('Failed to load comprehensive learning data:', error);
@@ -152,6 +165,29 @@ const AdvancedSelfLearning = () => {
 
   return (
     <div className="space-y-6">
+      {/* Demo Data Notice */}
+      {isDemoData && (
+        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
+          <CardContent className="pt-6">
+            <div className="flex items-start space-x-3">
+              <div className="text-blue-600 text-2xl">ℹ️</div>
+              <div className="flex-1">
+                <div className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
+                  Demo Data Displayed
+                </div>
+                <p className="text-sm text-blue-800 dark:text-blue-200">
+                  This tab shows <strong>demonstration data</strong> to illustrate the advanced self-learning capabilities. 
+                  Generate apps in the <strong>Generate</strong> tab to see real learning analytics populate here!
+                </p>
+                <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
+                  💡 The system learns from every code generation and will display actual metrics once you start using it.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Header with Overall Score */}
       <div className="flex items-center justify-between">
         <div>

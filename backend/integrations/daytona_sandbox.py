@@ -36,8 +36,8 @@ class DaytonaSandbox:
         try:
             self.total_executions += 1
             
-            # Create sandbox
-            sandbox = await asyncio.to_thread(self.daytona.create, language=language)
+            # Create sandbox (no language parameter, uses default)
+            sandbox = await asyncio.to_thread(self.daytona.create)
             self.active_sandboxes += 1
             
             try:
@@ -45,18 +45,22 @@ class DaytonaSandbox:
                 response = await asyncio.to_thread(sandbox.process.code_run, code)
                 
                 # Check result
-                success = response.exit_code == 0
+                success = response.exit_code == 0 if hasattr(response, 'exit_code') else False
                 if success:
                     self.successful_executions += 1
                 
                 return {
                     "success": success,
-                    "exit_code": response.exit_code,
-                    "result": response.result,
-                    "error": None if success else response.result
+                    "exit_code": getattr(response, 'exit_code', -1),
+                    "result": getattr(response, 'result', str(response)),
+                    "error": None if success else getattr(response, 'result', str(response))
                 }
             finally:
-                # Cleanup
+                # Cleanup sandbox
+                try:
+                    await asyncio.to_thread(sandbox.delete)
+                except:
+                    pass
                 self.active_sandboxes -= 1
                 
         except Exception as e:
@@ -72,8 +76,8 @@ class DaytonaSandbox:
         try:
             self.total_executions += 1
             
-            # Create JavaScript sandbox
-            sandbox = await asyncio.to_thread(self.daytona.create, language='javascript')
+            # Create sandbox
+            sandbox = await asyncio.to_thread(self.daytona.create)
             self.active_sandboxes += 1
             
             try:
@@ -104,7 +108,7 @@ try {{
                 
                 response = await asyncio.to_thread(sandbox.process.code_run, test_code)
                 
-                success = response.exit_code == 0
+                success = response.exit_code == 0 if hasattr(response, 'exit_code') else False
                 if success:
                     self.successful_executions += 1
                 
@@ -114,13 +118,17 @@ try {{
                         "syntax_check": "passed" if success else "failed",
                         "runtime_check": "passed" if success else "failed",
                         "security_scan": "passed",  # TODO: Add actual security scanning
-                        "output": response.result
+                        "output": getattr(response, 'result', str(response))
                     },
                     "execution_time": 0.5,
-                    "error": None if success else response.result
+                    "error": None if success else getattr(response, 'result', str(response))
                 }
             finally:
-                # Cleanup
+                # Cleanup sandbox
+                try:
+                    await asyncio.to_thread(sandbox.delete)
+                except:
+                    pass
                 self.active_sandboxes -= 1
                 
         except Exception as e:
