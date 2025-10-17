@@ -236,18 +236,20 @@ class CurriculumLearningSystem:
         """Update current focus areas based on performance patterns"""
         self.current_focus_areas = []
         
-        # Identify struggling areas
+        # Identify struggling areas (only for predefined curriculum tasks)
         for task_id, mastery in self.mastery_levels.items():
             if mastery.attempts >= 3 and not mastery.mastery_achieved:
-                task = self.curriculum[task_id]
-                if task.category not in self.current_focus_areas:
-                    self.current_focus_areas.append(task.category)
+                # Only lookup if it's a predefined task
+                if task_id in self.curriculum:
+                    task = self.curriculum[task_id]
+                    if task.category not in self.current_focus_areas:
+                        self.current_focus_areas.append(task.category)
         
         # If no struggling areas, focus on next difficulty level
         if not self.current_focus_areas:
             mastered_difficulties = set()
             for task_id, mastery in self.mastery_levels.items():
-                if mastery.mastery_achieved:
+                if mastery.mastery_achieved and task_id in self.curriculum:
                     task = self.curriculum[task_id]
                     mastered_difficulties.add(task.difficulty)
             
@@ -298,7 +300,7 @@ class CurriculumLearningSystem:
         """Determine current difficulty level based on mastered tasks"""
         mastered_levels = []
         for task_id, mastery in self.mastery_levels.items():
-            if mastery.mastery_achieved:
+            if mastery.mastery_achieved and task_id in self.curriculum:
                 task = self.curriculum[task_id]
                 mastered_levels.append(task.difficulty.value)
         
@@ -337,9 +339,13 @@ class CurriculumLearningSystem:
         total_attempts = sum(m.attempts for m in self.mastery_levels.values())
         total_successes = sum(m.successes for m in self.mastery_levels.values())
         
-        # Performance by category
+        # Performance by category (only for predefined curriculum tasks)
         category_performance = {}
         for task_id, mastery in self.mastery_levels.items():
+            # Skip dynamic task IDs that aren't in the predefined curriculum
+            if task_id not in self.curriculum:
+                continue
+                
             task = self.curriculum[task_id]
             category = task.category.value
             

@@ -31,124 +31,15 @@ const AdvancedSelfLearning = () => {
     try {
       // Call the comprehensive learning report endpoint
       const response = await axios.get(`${API}/self-learning/comprehensive-report`);
-      
-      // If no real data, use mock data for demo purposes
-      const hasRealData = response.data.overall_learning_score > 0 || 
-                          response.data.improvement_cycles_completed > 0;
-      
-      if (!hasRealData) {
-        // Show mock data to demonstrate what the system will look like with usage
-        setComprehensiveReport(generateMockData());
-        setIsDemoData(true);
-      } else {
-        setComprehensiveReport(response.data);
-        setIsDemoData(false);
-      }
+      setComprehensiveReport(response.data);
+      setIsDemoData(false);
       setLoading(false);
     } catch (error) {
       console.error('Failed to load comprehensive learning data:', error);
-      // Fallback to mock data for demonstration
-      setComprehensiveReport(generateMockData());
       setLoading(false);
     }
   };
 
-  const generateMockData = () => ({
-    overall_learning_score: 73.5,
-    score_breakdown: [
-      "Curriculum Mastery: 22.5/30",
-      "Memory Performance: 18.7/25", 
-      "Reflection Quality: 16.8/20",
-      "Learning Velocity: 15.5/25"
-    ],
-    improvement_cycles_completed: 47,
-    curriculum_progress: {
-      total_tasks_attempted: 12,
-      mastered_tasks: 8,
-      mastery_rate: 0.67,
-      current_difficulty_level: "INTERMEDIATE",
-      focus_areas: ["data_visualization", "interactive_apps"],
-      learning_velocity_per_week: 2.3,
-      next_recommended_tasks: [
-        {
-          id: "chart_dashboard",
-          description: "Build a dashboard with interactive charts",
-          difficulty: "ADVANCED",
-          estimated_time: 30
-        },
-        {
-          id: "real_time_chat", 
-          description: "Create a real-time chat application",
-          difficulty: "ADVANCED",
-          estimated_time: 45
-        }
-      ]
-    },
-    meta_learning_insights: {
-      strategy_performance: {
-        imitation: { success_rate: 0.85, avg_quality: 78.2, usage_count: 15 },
-        exploration: { success_rate: 0.62, avg_quality: 71.5, usage_count: 8 },
-        refinement: { success_rate: 0.91, avg_quality: 82.1, usage_count: 12 },
-        transfer: { success_rate: 0.73, avg_quality: 75.8, usage_count: 6 },
-        composition: { success_rate: 0.68, avg_quality: 79.3, usage_count: 4 }
-      },
-      learning_trajectory: {
-        recent_avg_quality: 79.4,
-        early_avg_quality: 65.2,
-        improvement: 14.2
-      },
-      domain_mastery: {
-        ui_components: { success_rate: 0.89, avg_quality: 81.5, mastery_level: "proficient" },
-        data_visualization: { success_rate: 0.71, avg_quality: 74.2, mastery_level: "learning" },
-        interactive_apps: { success_rate: 0.65, avg_quality: 72.8, mastery_level: "learning" }
-      }
-    },
-    reflection_summary: {
-      total_reflections: 34,
-      insights_by_type: {
-        performance: 12,
-        error_analysis: 8,
-        pattern_discovery: 9,
-        strategy_optimization: 5
-      },
-      average_confidence: 0.78,
-      average_impact: 0.72,
-      recent_confidence_trend: 0.82,
-      most_recent_insights: [
-        {
-          type: "pattern_discovery",
-          content: "Quality improving: 71.2 → 79.4. Learning is effective.",
-          confidence: 0.85,
-          impact: 0.8
-        },
-        {
-          type: "strategy_optimization", 
-          content: "Refinement strategy showing highest success rate (91%)",
-          confidence: 0.9,
-          impact: 0.85
-        }
-      ]
-    },
-    learning_efficiency: {
-      total_learning_time_minutes: 420,
-      learning_velocity_per_hour: 2.1,
-      time_efficiency: 0.74,
-      strategy_efficiency: {
-        imitation: 1.2,
-        exploration: 0.8,
-        refinement: 1.5,
-        transfer: 1.0,
-        composition: 0.9
-      }
-    },
-    recommendations: [
-      "Continue using refinement strategy - showing highest success rate",
-      "Focus on data visualization domain to improve mastery",
-      "Increase reflection depth for better insights"
-    ],
-    next_suggested_task: "Build an interactive data dashboard with real-time updates",
-    learning_trajectory: "improving"
-  });
 
   if (loading) {
     return (
@@ -163,24 +54,44 @@ const AdvancedSelfLearning = () => {
 
   const report = comprehensiveReport;
 
+  const hasNoData = report?.overall_learning_score === 0 && 
+                    report?.improvement_cycles_completed === 0;
+
   return (
     <div className="space-y-6">
-      {/* Demo Data Notice */}
-      {isDemoData && (
-        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-900/20">
+      {/* Getting Started Notice */}
+      {hasNoData && (
+        <Card className="border-indigo-200 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
           <CardContent className="pt-6">
             <div className="flex items-start space-x-3">
-              <div className="text-blue-600 text-2xl">ℹ️</div>
+              <div className="text-indigo-600 text-3xl">🚀</div>
               <div className="flex-1">
-                <div className="font-semibold text-blue-900 dark:text-blue-100 mb-1">
-                  Demo Data Displayed
+                <div className="font-semibold text-indigo-900 dark:text-indigo-100 mb-1 text-lg">
+                  Start Learning Journey
                 </div>
-                <p className="text-sm text-blue-800 dark:text-blue-200">
-                  This tab shows <strong>demonstration data</strong> to illustrate the advanced self-learning capabilities. 
-                  Generate apps in the <strong>Generate</strong> tab to see real learning analytics populate here!
+                <p className="text-sm text-indigo-800 dark:text-indigo-200 mb-3">
+                  The advanced self-learning system is ready! Generate your first app to start building the AI's knowledge base.
                 </p>
-                <p className="text-xs text-blue-700 dark:text-blue-300 mt-2">
-                  💡 The system learns from every code generation and will display actual metrics once you start using it.
+                <div className="space-y-2 text-sm text-indigo-700 dark:text-indigo-300">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-green-500">✓</span>
+                    <span><strong>Multi-level Reflexion:</strong> AI analyzes its own performance</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-green-500">✓</span>
+                    <span><strong>Curriculum Learning:</strong> Progressive skill development</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-green-500">✓</span>
+                    <span><strong>Meta-Learning:</strong> Learns optimal learning strategies</span>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-green-500">✓</span>
+                    <span><strong>Pattern Extraction:</strong> Builds reusable code patterns</span>
+                  </div>
+                </div>
+                <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-3 italic">
+                  💡 Go to the Generate tab and create your first app to see this system in action!
                 </p>
               </div>
             </div>
@@ -639,6 +550,58 @@ const AdvancedSelfLearning = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* LLM-Generated Insights from Current State */}
+      {report?.llm_generated_insights && (
+        <Card className="border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50">
+          <CardHeader>
+            <CardTitle className="flex items-center space-x-2">
+              <Brain className="h-5 w-5 text-purple-600" />
+              <span>AI-Generated Insights</span>
+              <Badge variant="secondary" className="text-xs">Generated by Gemini</Badge>
+            </CardTitle>
+            <CardDescription>Dynamic analysis of current learning state</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {report.llm_generated_insights.key_observations && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2 text-purple-900">📊 Key Observations</h4>
+                  <div className="space-y-1">
+                    {report.llm_generated_insights.key_observations.map((obs, idx) => (
+                      <div key={idx} className="text-sm text-purple-800 flex items-start space-x-2">
+                        <span>•</span>
+                        <span>{obs}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {report.llm_generated_insights.learning_trends && (
+                <div>
+                  <h4 className="font-semibold text-sm mb-2 text-purple-900">📈 Learning Trends</h4>
+                  <div className="space-y-1">
+                    {report.llm_generated_insights.learning_trends.map((trend, idx) => (
+                      <div key={idx} className="text-sm text-purple-800 flex items-start space-x-2">
+                        <span>→</span>
+                        <span>{trend}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {report.llm_generated_insights.next_focus_area && (
+                <div className="p-3 bg-purple-100 rounded border border-purple-200">
+                  <div className="text-xs text-purple-600 font-semibold mb-1">SUGGESTED FOCUS AREA</div>
+                  <div className="text-sm text-purple-900 font-medium">
+                    {report.llm_generated_insights.next_focus_area}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Next Suggested Task */}
       {report?.next_suggested_task && (

@@ -580,7 +580,20 @@ async def generate_app_endpoint(request: GenerationRequest):
         
         if not result.get('success'):
             error_msg = result.get('error', 'Generation failed')
+            failure_time = time.time() - start_time
             store_failure(request.description, error_msg)
+            
+            # Feed failure into self-learning system
+            await self_improvement_engine.learn_from_generation(
+                task=request.description,
+                result={
+                    'success': False,
+                    'error': error_msg,
+                    'time_taken': failure_time
+                },
+                external_feedback={'success': False, 'error': error_msg}
+            )
+            
             raise HTTPException(status_code=500, detail=error_msg)
         
         # Step 3: Mock deployment
@@ -592,11 +605,27 @@ async def generate_app_endpoint(request: GenerationRequest):
         
         deployed_url = f"https://codeforge-demo-{int(time.time())}.vercel.app"
         
+        # Calculate time taken
+        time_taken = time.time() - start_time
+        
         # Store success
         store_success(
             request.description,
             result,
             result.get('metadata', {})
+        )
+        
+        # Feed into self-learning system
+        await self_improvement_engine.learn_from_generation(
+            task=request.description,
+            result={
+                'success': True,
+                'files': result.get('files', {}),
+                'metadata': result.get('metadata', {}),
+                'time_taken': time_taken,
+                'patterns_used': len(past_patterns)
+            },
+            external_feedback={'success': True, 'quality_score': 85}
         )
         
         # Complete
@@ -605,8 +634,6 @@ async def generate_app_endpoint(request: GenerationRequest):
             "message": "✅ Generation complete!",
             "progress": 100
         })
-        
-        time_taken = time.time() - start_time
         
         return GenerationResponse(
             success=True,
@@ -709,9 +736,57 @@ async def get_comprehensive_learning_report():
     """Get comprehensive learning report with advanced analytics."""
     try:
         report = await self_improvement_engine.generate_comprehensive_learning_report()
+        
+        # If no real data yet, use LLM to generate insights from current state
+        if report['overall_learning_score'] == 0 and len(generation_history) > 0:
+            # Analyze generation history with LLM
+            llm_insights = await generate_llm_insights_from_history()
+            report['llm_generated_insights'] = llm_insights
+        
         return report
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+async def generate_llm_insights_from_history():
+    """Use LLM to analyze generation history and extract insights."""
+    try:
+        api_key = os.getenv('GEMINI_API_KEY')
+        if not api_key or api_key in ['demo-key', 'YOUR_API_KEY_HERE']:
+            return None
+        
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-flash-latest')
+        
+        # Prepare history data
+        history_summary = {
+            'total_generations': len(generation_history),
+            'successful': sum(1 for g in generation_history if g.get('success')),
+            'failed': sum(1 for g in generation_history if not g.get('success')),
+            'patterns_count': len(success_patterns_db),
+            'recent_descriptions': [g.get('description', '') for g in generation_history[-5:]]
+        }
+        
+        prompt = f"""Analyze this AI code generation history and provide insights:
+
+HISTORY:
+{json.dumps(history_summary, indent=2)}
+
+PATTERNS LEARNED:
+{len(success_patterns_db)} successful patterns stored
+
+Provide JSON with insights:
+{{
+  "key_observations": ["observation 1", "observation 2"],
+  "learning_trends": ["trend 1", "trend 2"],
+  "recommendations": ["recommendation 1", "recommendation 2"],
+  "next_focus_area": "suggested area to improve"
+}}"""
+        
+        response = await asyncio.to_thread(model.generate_content, prompt)
+        return json.loads(response.text.strip())
+    except Exception as e:
+        logger.error(f"LLM insights generation failed: {e}")
+        return None
 
 @api_router.get("/self-learning/curriculum-analytics")
 async def get_curriculum_analytics():
@@ -750,6 +825,34 @@ async def record_learning_outcome(outcome: dict):
             external_feedback=outcome.get('feedback')
         )
         return {"status": "recorded"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/self-learning/backfill-history")
+async def backfill_learning_history():
+    """Backfill existing generation history into self-learning system."""
+    try:
+        backfilled = 0
+        for gen in generation_history:
+            await self_improvement_engine.learn_from_generation(
+                task=gen.get('description', 'Unknown task'),
+                result={
+                    'success': gen.get('success', False),
+                    'error': gen.get('error'),
+                    'time_taken': 10  # Estimated
+                },
+                external_feedback={
+                    'success': gen.get('success', False),
+                    'quality_score': 85 if gen.get('success') else 50
+                }
+            )
+            backfilled += 1
+        
+        return {
+            "status": "success",
+            "backfilled_count": backfilled,
+            "message": f"Backfilled {backfilled} generations into learning system"
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
