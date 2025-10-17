@@ -10,7 +10,7 @@ import asyncio
 from dataclasses import dataclass
 from enum import Enum
 import numpy as np
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+import google.generativeai as genai
 import os
 
 
@@ -238,12 +238,13 @@ class AdvancedReflexionFramework:
         """Analyze causal relationships between actions and outcomes"""
         insights = []
         
-        # Use LLM for causal reasoning
-        causal_chat = LlmChat(
-            api_key=os.getenv('EMERGENT_LLM_KEY'),
-            session_id=f"causal_{datetime.now().timestamp()}",
-            system_message="You are an expert in causal analysis. Identify cause-effect relationships in agent performance."
-        ).with_model("gemini", "gemini-2.5-pro")
+        # Configure Gemini
+        api_key = os.getenv('GEMINI_API_KEY') or os.getenv('EMERGENT_LLM_KEY')
+        if not api_key or api_key in ['demo-key', 'YOUR_API_KEY_HERE']:
+            return insights  # Skip if API key not configured
+        
+        genai.configure(api_key=api_key)
+        causal_model = genai.GenerativeModel('gemini-2.5-flash-002')
         
         prompt = f"""Analyze the causal relationships in this coding agent performance:
 
@@ -270,10 +271,10 @@ Return JSON:
 }}"""
         
         try:
-            response = await causal_chat.send_message(UserMessage(text=prompt))
+            response = await asyncio.to_thread(causal_model.generate_content, prompt)
             
             # Parse response
-            response_text = response.strip()
+            response_text = response.text.strip()
             if '```json' in response_text:
                 response_text = response_text.split('```json')[1].split('```')[0]
             
@@ -309,12 +310,13 @@ Return JSON:
         success = performance_data.get('success', False)
         
         if not success:
-            # Generate counterfactual scenarios
-            counterfactual_chat = LlmChat(
-                api_key=os.getenv('EMERGENT_LLM_KEY'),
-                session_id=f"counterfactual_{datetime.now().timestamp()}",
-                system_message="You are an expert in counterfactual reasoning. Analyze alternative approaches."
-            ).with_model("gemini", "gemini-2.5-pro")
+            # Configure Gemini
+            api_key = os.getenv('GEMINI_API_KEY') or os.getenv('EMERGENT_LLM_KEY')
+            if not api_key or api_key in ['demo-key', 'YOUR_API_KEY_HERE']:
+                return insights  # Skip if API key not configured
+            
+            genai.configure(api_key=api_key)
+            counterfactual_model = genai.GenerativeModel('gemini-2.5-flash-002')
             
             prompt = f"""Analyze counterfactual scenarios for this failed coding task:
 
@@ -342,9 +344,9 @@ Return JSON:
 }}"""
             
             try:
-                response = await counterfactual_chat.send_message(UserMessage(text=prompt))
+                response = await asyncio.to_thread(counterfactual_model.generate_content, prompt)
                 
-                response_text = response.strip()
+                response_text = response.text.strip()
                 if '```json' in response_text:
                     response_text = response_text.split('```json')[1].split('```')[0]
                 

@@ -12,7 +12,7 @@ import time
 import asyncio
 import logging
 from datetime import datetime, timezone
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+import google.generativeai as genai
 from agents.manager_agent import ManagerAgent
 from agents.base_agent import A2AMessage
 from self_learning.self_improvement_engine import SelfImprovementEngine
@@ -179,7 +179,18 @@ def store_failure(description: str, error: str, code: Optional[Dict] = None):
     })
 
 async def generate_with_gemini(description: str, past_patterns: List[Dict], use_thinking: bool, send_update) -> Dict:
-    """Generate app using Gemini via emergentintegrations."""
+    """Generate app using Google Gemini 2.5 Flash directly."""
+    
+    # Check if API key is properly configured
+    api_key = os.getenv('GEMINI_API_KEY') or os.getenv('EMERGENT_LLM_KEY')
+    if not api_key or api_key in ['demo-key', 'YOUR_API_KEY_HERE']:
+        return {
+            'success': False,
+            'error': 'API key not configured. Please set GEMINI_API_KEY environment variable with a valid Google AI Studio API key. Get one at: https://aistudio.google.com/apikey'
+        }
+    
+    # Configure Gemini
+    genai.configure(api_key=api_key)
     
     try:
         # Build context
@@ -193,20 +204,19 @@ async def generate_with_gemini(description: str, past_patterns: List[Dict], use_
                 pattern_context += f"Code Pattern:\n{pattern['code_snippet']}\n"
         
         if use_thinking:
-            # Step 1: Planning with Gemini 2.5 Pro
+            # Step 1: Planning with Gemini 2.5 Flash
             await send_update({
                 "type": "status",
-                "message": "🧠 Planning with Gemini 2.5 Pro...",
+                "message": "🧠 Planning with Gemini 2.5 Flash...",
                 "progress": 20
             })
             
-            planning_chat = LlmChat(
-                api_key=os.getenv('EMERGENT_LLM_KEY'),
-                session_id=f"planning_{uuid.uuid4()}",
-                system_message="You are an expert technical architect. Analyze app requirements and create detailed technical plans."
-            ).with_model("gemini", "gemini-2.5-pro")
+            # Create planning model
+            planning_model = genai.GenerativeModel('gemini-2.5-flash-002')
             
-            planning_prompt = f"""Analyze this app request and create a technical plan.
+            planning_prompt = f"""You are an expert technical architect. Analyze app requirements and create detailed technical plans.
+
+Analyze this app request and create a technical plan.
 
 REQUEST: {description}
 
@@ -222,8 +232,8 @@ Analyze:
 
 Provide detailed technical plan."""
             
-            planning_response = await planning_chat.send_message(UserMessage(text=planning_prompt))
-            technical_plan = planning_response
+            planning_response = await asyncio.to_thread(planning_model.generate_content, planning_prompt)
+            technical_plan = planning_response.text
             
             await send_update({
                 "type": "status",
@@ -231,14 +241,12 @@ Provide detailed technical plan."""
                 "progress": 50
             })
             
-            # Step 2: Code generation with Flash
-            code_chat = LlmChat(
-                api_key=os.getenv('EMERGENT_LLM_KEY'),
-                session_id=f"coding_{uuid.uuid4()}",
-                system_message="You are an expert full-stack developer. Generate complete, production-ready web applications."
-            ).with_model("gemini", "gemini-2.5-flash")
+            # Step 2: Code generation with Gemini 2.5 Flash
+            code_model = genai.GenerativeModel('gemini-2.5-flash-002')
             
-            code_prompt = f"""Based on this plan, generate complete code:
+            code_prompt = f"""You are an expert full-stack developer. Generate complete, production-ready web applications.
+
+Based on this plan, generate complete code:
 
 PLAN:
 {technical_plan}
@@ -275,12 +283,20 @@ Return ONLY valid JSON in this exact format:
   }}
 }}"""
             
-            code_response = await code_chat.send_message(UserMessage(text=code_prompt))
+            code_response = await asyncio.to_thread(code_model.generate_content, code_prompt)
+            code_response_text = code_response.text
             
             # Parse JSON response
             try:
                 # Clean response - remove markdown code blocks
-                response_text = code_response.strip()
+                response_text = code_response_text.strip()
+                
+                # Check if response is empty or an error message
+                if not response_text:
+                    return {
+                        'success': False,
+                        'error': "Received empty response from AI. This might indicate an API authentication issue or rate limit."
+                    }
                 
                 # Remove markdown code block markers
                 if '```json' in response_text:
@@ -312,27 +328,23 @@ Return ONLY valid JSON in this exact format:
                     'model': 'gemini-2.5-pro + flash'
                 }
             except json.JSONDecodeError as e:
-                # If JSON parsing fails, create a simple error response
+                # If JSON parsing fails, provide detailed error
                 return {
                     'success': False,
-                    'error': f"Failed to parse AI response as JSON. The model may have returned plain text instead of JSON format. Error: {str(e)[:200]}"
+                    'error': f"Failed to parse AI response as JSON. Response preview: {response_text[:200]}... Error: {str(e)}"
                 }
         
         else:
-            # Direct generation with Flash
+            # Direct generation with Gemini 2.5 Flash
             await send_update({
                 "type": "status",
                 "message": "💻 Generating with Gemini 2.5 Flash...",
                 "progress": 30
             })
             
-            code_chat = LlmChat(
-                api_key=os.getenv('EMERGENT_LLM_KEY'),
-                session_id=f"direct_{uuid.uuid4()}",
-                system_message="You are an expert full-stack developer."
-            ).with_model("gemini", "gemini-2.5-flash")
+            code_model = genai.GenerativeModel('gemini-2.5-flash-002')
             
-            prompt = f"""Generate a COMPLETE web application.
+            prompt = f"""You are an expert full-stack developer. Generate a COMPLETE web application.
 
 REQUEST: {description}
 
@@ -353,38 +365,52 @@ Return ONLY valid JSON:
   }}
 }}"""
             
-            response = await code_chat.send_message(UserMessage(text=prompt))
+            response = await asyncio.to_thread(code_model.generate_content, prompt)
+            response_text_raw = response.text
             
-            # Clean response - remove markdown code blocks
-            response_text = response.strip()
-            
-            # Remove markdown code block markers
-            if '```json' in response_text:
-                response_text = response_text.split('```json')[1]
-                if '```' in response_text:
-                    response_text = response_text.split('```')[0]
-            elif '```' in response_text:
-                response_text = response_text.split('```')[1]
-                if '```' in response_text:
-                    response_text = response_text.split('```')[0]
-            
-            response_text = response_text.strip()
-            
-            result = json.loads(response_text)
-            
-            # Validate structure
-            if 'files' not in result or not isinstance(result['files'], dict):
+            try:
+                # Clean response - remove markdown code blocks
+                response_text = response_text_raw.strip()
+                
+                # Check if response is empty
+                if not response_text:
+                    return {
+                        'success': False,
+                        'error': "Received empty response from AI. This might indicate an API authentication issue or rate limit."
+                    }
+                
+                # Remove markdown code block markers
+                if '```json' in response_text:
+                    response_text = response_text.split('```json')[1]
+                    if '```' in response_text:
+                        response_text = response_text.split('```')[0]
+                elif '```' in response_text:
+                    response_text = response_text.split('```')[1]
+                    if '```' in response_text:
+                        response_text = response_text.split('```')[0]
+                
+                response_text = response_text.strip()
+                
+                result = json.loads(response_text)
+                
+                # Validate structure
+                if 'files' not in result or not isinstance(result['files'], dict):
+                    return {
+                        'success': False,
+                        'error': "Invalid response structure: missing 'files' dictionary"
+                    }
+                
+                return {
+                    'success': True,
+                    'files': result.get('files', {}),
+                    'metadata': result.get('metadata', {}),
+                    'model': 'gemini-2.5-flash'
+                }
+            except json.JSONDecodeError as e:
                 return {
                     'success': False,
-                    'error': "Invalid response structure: missing 'files' dictionary"
+                    'error': f"Failed to parse AI response as JSON. Response preview: {response_text[:200]}... Error: {str(e)}"
                 }
-            
-            return {
-                'success': True,
-                'files': result.get('files', {}),
-                'metadata': result.get('metadata', {}),
-                'model': 'gemini-2.5-flash'
-            }
     
     except Exception as e:
         return {

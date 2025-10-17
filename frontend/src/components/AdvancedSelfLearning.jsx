@@ -162,10 +162,12 @@ const AdvancedSelfLearning = () => {
           <p className="text-slate-600">Research-backed multi-agent learning system</p>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-bold text-indigo-600">{report.overall_learning_score.toFixed(1)}</div>
+          <div className="text-3xl font-bold text-indigo-600">
+            {(report?.overall_learning_score ?? 0).toFixed(1)}
+          </div>
           <div className="text-sm text-slate-600">Learning Score</div>
-          <Badge variant={report.learning_trajectory === 'improving' ? 'default' : 'secondary'}>
-            {report.learning_trajectory}
+          <Badge variant={report?.learning_trajectory === 'improving' ? 'default' : 'secondary'}>
+            {report?.learning_trajectory || 'developing'}
           </Badge>
         </div>
       </div>
@@ -180,7 +182,7 @@ const AdvancedSelfLearning = () => {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {report.score_breakdown.map((item, idx) => {
+            {(report?.score_breakdown || []).map((item, idx) => {
               const [label, score] = item.split(': ');
               const [current, max] = score.split('/');
               const percentage = (parseFloat(current) / parseFloat(max)) * 100;
@@ -233,21 +235,21 @@ const AdvancedSelfLearning = () => {
                   <div>
                     <div className="flex justify-between text-sm mb-2">
                       <span>Tasks Mastered</span>
-                      <span>{report.curriculum_progress.mastered_tasks}/{report.curriculum_progress.total_tasks_attempted}</span>
+                      <span>{report?.curriculum_progress?.mastered_tasks || 0}/{report?.curriculum_progress?.total_tasks_attempted || 0}</span>
                     </div>
-                    <Progress value={report.curriculum_progress.mastery_rate * 100} className="h-3" />
+                    <Progress value={(report?.curriculum_progress?.mastery_rate || 0) * 100} className="h-3" />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div className="p-3 bg-blue-50 rounded-lg">
                       <div className="text-lg font-bold text-blue-600">
-                        {report.curriculum_progress.current_difficulty_level}
+                        {report?.curriculum_progress?.current_difficulty_level || 'BEGINNER'}
                       </div>
                       <div className="text-xs text-blue-700">Current Level</div>
                     </div>
                     <div className="p-3 bg-green-50 rounded-lg">
                       <div className="text-lg font-bold text-green-600">
-                        {report.curriculum_progress.learning_velocity_per_week.toFixed(1)}
+                        {(report?.curriculum_progress?.learning_velocity_per_week || 0).toFixed(1)}
                       </div>
                       <div className="text-xs text-green-700">Tasks/Week</div>
                     </div>
@@ -265,7 +267,7 @@ const AdvancedSelfLearning = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {report.curriculum_progress.focus_areas.map((area, idx) => (
+                  {(report?.curriculum_progress?.focus_areas || []).map((area, idx) => (
                     <div key={idx} className="flex items-center justify-between p-2 bg-purple-50 rounded">
                       <span className="text-sm font-medium text-purple-800">
                         {area.replace('_', ' ').toUpperCase()}
@@ -273,6 +275,9 @@ const AdvancedSelfLearning = () => {
                       <Badge variant="secondary">Focus</Badge>
                     </div>
                   ))}
+                  {(!report?.curriculum_progress?.focus_areas || report.curriculum_progress.focus_areas.length === 0) && (
+                    <p className="text-sm text-slate-500">No focus areas identified yet</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -286,7 +291,7 @@ const AdvancedSelfLearning = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {report.curriculum_progress.next_recommended_tasks.map((task, idx) => (
+                {(report?.curriculum_progress?.next_recommended_tasks || []).map((task, idx) => (
                   <div key={idx} className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50">
                     <div className="flex-1">
                       <div className="font-medium text-slate-800">{task.description}</div>
@@ -299,6 +304,9 @@ const AdvancedSelfLearning = () => {
                     </Button>
                   </div>
                 ))}
+                {(!report?.curriculum_progress?.next_recommended_tasks || report.curriculum_progress.next_recommended_tasks.length === 0) && (
+                  <p className="text-sm text-slate-500">No task recommendations available yet</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -313,22 +321,25 @@ const AdvancedSelfLearning = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Object.entries(report.meta_learning_insights.strategy_performance).map(([strategy, perf]) => (
+                  {Object.entries(report?.meta_learning_insights?.strategy_performance || {}).map(([strategy, perf]) => (
                     <div key={strategy} className="flex items-center justify-between p-3 border rounded">
                       <div>
                         <div className="font-medium capitalize">{strategy}</div>
                         <div className="text-sm text-slate-600">
-                          {perf.usage_count} uses • {perf.avg_quality.toFixed(1)} avg quality
+                          {perf?.usage_count || 0} uses • {(perf?.avg_quality || 0).toFixed(1)} avg quality
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className={`font-bold ${perf.success_rate > 0.8 ? 'text-green-600' : perf.success_rate > 0.6 ? 'text-yellow-600' : 'text-red-600'}`}>
-                          {(perf.success_rate * 100).toFixed(0)}%
+                        <div className={`font-bold ${(perf?.success_rate || 0) > 0.8 ? 'text-green-600' : (perf?.success_rate || 0) > 0.6 ? 'text-yellow-600' : 'text-red-600'}`}>
+                          {((perf?.success_rate || 0) * 100).toFixed(0)}%
                         </div>
                         <div className="text-xs text-slate-500">Success</div>
                       </div>
                     </div>
                   ))}
+                  {Object.keys(report?.meta_learning_insights?.strategy_performance || {}).length === 0 && (
+                    <p className="text-sm text-slate-500">No strategy data available yet</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -339,23 +350,26 @@ const AdvancedSelfLearning = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {Object.entries(report.meta_learning_insights.domain_mastery).map(([domain, mastery]) => (
+                  {Object.entries(report?.meta_learning_insights?.domain_mastery || {}).map(([domain, mastery]) => (
                     <div key={domain} className="p-3 border rounded">
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium capitalize">{domain.replace('_', ' ')}</span>
                         <Badge variant={
-                          mastery.mastery_level === 'expert' ? 'default' :
-                          mastery.mastery_level === 'proficient' ? 'secondary' : 'outline'
+                          mastery?.mastery_level === 'expert' ? 'default' :
+                          mastery?.mastery_level === 'proficient' ? 'secondary' : 'outline'
                         }>
-                          {mastery.mastery_level}
+                          {mastery?.mastery_level || 'learning'}
                         </Badge>
                       </div>
                       <div className="grid grid-cols-2 gap-2 text-sm">
-                        <div>Success: {(mastery.success_rate * 100).toFixed(0)}%</div>
-                        <div>Quality: {mastery.avg_quality.toFixed(1)}</div>
+                        <div>Success: {((mastery?.success_rate || 0) * 100).toFixed(0)}%</div>
+                        <div>Quality: {(mastery?.avg_quality || 0).toFixed(1)}</div>
                       </div>
                     </div>
                   ))}
+                  {Object.keys(report?.meta_learning_insights?.domain_mastery || {}).length === 0 && (
+                    <p className="text-sm text-slate-500">No domain mastery data yet</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -370,19 +384,19 @@ const AdvancedSelfLearning = () => {
               <div className="grid grid-cols-3 gap-4 text-center">
                 <div className="p-4 bg-blue-50 rounded-lg">
                   <div className="text-2xl font-bold text-blue-600">
-                    {report.meta_learning_insights.learning_trajectory.early_avg_quality.toFixed(1)}
+                    {(report?.meta_learning_insights?.learning_trajectory?.early_avg_quality || 0).toFixed(1)}
                   </div>
                   <div className="text-sm text-blue-700">Early Average</div>
                 </div>
                 <div className="p-4 bg-green-50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">
-                    {report.meta_learning_insights.learning_trajectory.recent_avg_quality.toFixed(1)}
+                    {(report?.meta_learning_insights?.learning_trajectory?.recent_avg_quality || 0).toFixed(1)}
                   </div>
                   <div className="text-sm text-green-700">Recent Average</div>
                 </div>
                 <div className="p-4 bg-purple-50 rounded-lg">
                   <div className="text-2xl font-bold text-purple-600">
-                    +{report.meta_learning_insights.learning_trajectory.improvement.toFixed(1)}
+                    +{(report?.meta_learning_insights?.learning_trajectory?.improvement || 0).toFixed(1)}
                   </div>
                   <div className="text-sm text-purple-700">Improvement</div>
                 </div>
@@ -406,13 +420,13 @@ const AdvancedSelfLearning = () => {
                   <div className="grid grid-cols-2 gap-4 text-center">
                     <div className="p-3 bg-indigo-50 rounded-lg">
                       <div className="text-lg font-bold text-indigo-600">
-                        {report.reflection_summary.total_reflections}
+                        {report?.reflection_summary?.total_reflections || 0}
                       </div>
                       <div className="text-xs text-indigo-700">Total Reflections</div>
                     </div>
                     <div className="p-3 bg-green-50 rounded-lg">
                       <div className="text-lg font-bold text-green-600">
-                        {(report.reflection_summary.average_confidence * 100).toFixed(0)}%
+                        {((report?.reflection_summary?.average_confidence || 0) * 100).toFixed(0)}%
                       </div>
                       <div className="text-xs text-green-700">Avg Confidence</div>
                     </div>
@@ -421,12 +435,15 @@ const AdvancedSelfLearning = () => {
                   <div>
                     <div className="text-sm font-medium mb-2">Reflection Types</div>
                     <div className="space-y-2">
-                      {Object.entries(report.reflection_summary.insights_by_type).map(([type, count]) => (
+                      {Object.entries(report?.reflection_summary?.insights_by_type || {}).map(([type, count]) => (
                         <div key={type} className="flex justify-between text-sm">
                           <span className="capitalize">{type.replace('_', ' ')}</span>
                           <span className="font-medium">{count}</span>
                         </div>
                       ))}
+                      {Object.keys(report?.reflection_summary?.insights_by_type || {}).length === 0 && (
+                        <p className="text-sm text-slate-500">No reflection data yet</p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -439,25 +456,28 @@ const AdvancedSelfLearning = () => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {report.reflection_summary.most_recent_insights.map((insight, idx) => (
+                  {(report?.reflection_summary?.most_recent_insights || []).map((insight, idx) => (
                     <div key={idx} className="p-3 border rounded-lg">
                       <div className="flex items-start justify-between mb-2">
                         <Badge variant="outline" className="text-xs">
-                          {insight.type.replace('_', ' ')}
+                          {insight?.type?.replace('_', ' ') || 'insight'}
                         </Badge>
                         <div className="text-xs text-slate-500">
-                          {(insight.confidence * 100).toFixed(0)}% confidence
+                          {((insight?.confidence || 0) * 100).toFixed(0)}% confidence
                         </div>
                       </div>
-                      <p className="text-sm text-slate-700">{insight.content}</p>
+                      <p className="text-sm text-slate-700">{insight?.content || 'No content'}</p>
                       <div className="mt-2">
-                        <Progress value={insight.impact * 100} className="h-1" />
+                        <Progress value={(insight?.impact || 0) * 100} className="h-1" />
                         <div className="text-xs text-slate-500 mt-1">
-                          Impact: {(insight.impact * 100).toFixed(0)}%
+                          Impact: {((insight?.impact || 0) * 100).toFixed(0)}%
                         </div>
                       </div>
                     </div>
                   ))}
+                  {(!report?.reflection_summary?.most_recent_insights || report.reflection_summary.most_recent_insights.length === 0) && (
+                    <p className="text-sm text-slate-500">No recent insights available</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -477,10 +497,10 @@ const AdvancedSelfLearning = () => {
               <CardContent>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-blue-600">
-                    {(report.learning_efficiency.time_efficiency * 100).toFixed(0)}%
+                    {((report?.learning_efficiency?.time_efficiency || 0) * 100).toFixed(0)}%
                   </div>
                   <div className="text-sm text-slate-600 mt-1">
-                    {report.learning_efficiency.total_learning_time_minutes} min total
+                    {report?.learning_efficiency?.total_learning_time_minutes || 0} min total
                   </div>
                 </div>
               </CardContent>
@@ -496,7 +516,7 @@ const AdvancedSelfLearning = () => {
               <CardContent>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-600">
-                    {report.learning_efficiency.learning_velocity_per_hour.toFixed(1)}
+                    {(report?.learning_efficiency?.learning_velocity_per_hour || 0).toFixed(1)}
                   </div>
                   <div className="text-sm text-slate-600 mt-1">
                     Quality points/hour
@@ -515,8 +535,11 @@ const AdvancedSelfLearning = () => {
               <CardContent>
                 <div className="text-center">
                   {(() => {
-                    const bestStrategy = Object.entries(report.learning_efficiency.strategy_efficiency)
-                      .reduce((a, b) => a[1] > b[1] ? a : b);
+                    const strategies = Object.entries(report?.learning_efficiency?.strategy_efficiency || {});
+                    if (strategies.length === 0) {
+                      return <div className="text-sm text-slate-500">No data yet</div>;
+                    }
+                    const bestStrategy = strategies.reduce((a, b) => a[1] > b[1] ? a : b);
                     return (
                       <>
                         <div className="text-lg font-bold text-purple-600 capitalize">
@@ -540,7 +563,7 @@ const AdvancedSelfLearning = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {Object.entries(report.learning_efficiency.strategy_efficiency).map(([strategy, efficiency]) => (
+                {Object.entries(report?.learning_efficiency?.strategy_efficiency || {}).map(([strategy, efficiency]) => (
                   <div key={strategy} className="flex items-center space-x-3">
                     <div className="w-20 text-sm capitalize">{strategy}</div>
                     <div className="flex-1">
@@ -549,6 +572,9 @@ const AdvancedSelfLearning = () => {
                     <div className="w-12 text-sm font-medium">{efficiency.toFixed(1)}</div>
                   </div>
                 ))}
+                {Object.keys(report?.learning_efficiency?.strategy_efficiency || {}).length === 0 && (
+                  <p className="text-sm text-slate-500">No strategy efficiency data yet</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -565,18 +591,21 @@ const AdvancedSelfLearning = () => {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {report.recommendations.map((rec, idx) => (
+            {(report?.recommendations || []).map((rec, idx) => (
               <div key={idx} className="flex items-start space-x-2">
                 <span className="text-yellow-600 mt-0.5">▸</span>
                 <span className="text-slate-700 text-sm">{rec}</span>
               </div>
             ))}
+            {(!report?.recommendations || report.recommendations.length === 0) && (
+              <p className="text-sm text-slate-500">No recommendations at this time</p>
+            )}
           </div>
         </CardContent>
       </Card>
 
       {/* Next Suggested Task */}
-      {report.next_suggested_task && (
+      {report?.next_suggested_task && (
         <Card className="border-indigo-200 bg-indigo-50">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">

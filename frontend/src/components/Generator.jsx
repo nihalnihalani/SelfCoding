@@ -1,22 +1,82 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { Label } from './ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Progress } from './ui/progress';
-import { toast } from 'sonner';
+import { Progress, ProgressSteps } from './ui/progress';
+import { toast } from '../lib/toast-config';
 import CodeViewer from './CodeViewer';
+import { 
+  Sparkles, 
+  Zap, 
+  Info, 
+  ChevronDown, 
+  ChevronUp,
+  Lightbulb,
+  X
+} from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from './ui/tooltip';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Template examples
+const templates = [
+  {
+    id: 'todo',
+    name: 'Todo App',
+    description: 'Build me a todo app with dark mode, drag-and-drop reordering, categories, and local storage persistence. Make it visually stunning with smooth animations.',
+    icon: '✅'
+  },
+  {
+    id: 'dashboard',
+    name: 'Analytics Dashboard',
+    description: 'Create an analytics dashboard with interactive charts, data tables, filters, and real-time updates. Include multiple chart types like line, bar, and pie charts.',
+    icon: '📊'
+  },
+  {
+    id: 'landing',
+    name: 'Landing Page',
+    description: 'Design a modern landing page with hero section, features grid, testimonials, pricing table, and contact form. Make it responsive and visually appealing.',
+    icon: '🚀'
+  },
+  {
+    id: 'calculator',
+    name: 'Calculator',
+    description: 'Build a scientific calculator with basic operations, memory functions, and history. Include keyboard support and a clean, modern interface.',
+    icon: '🔢'
+  },
+  {
+    id: 'weather',
+    name: 'Weather App',
+    description: 'Create a weather app that shows current conditions, 5-day forecast, and location search. Include weather icons and temperature unit toggle.',
+    icon: '🌤️'
+  }
+];
+
+// Preset configurations
+const presets = {
+  quick: { useThinking: false, autoTest: false, maxIterations: 1 },
+  balanced: { useThinking: true, autoTest: false, maxIterations: 2 },
+  thorough: { useThinking: true, autoTest: true, maxIterations: 3 }
+};
 
 const Generator = () => {
   const [description, setDescription] = useState('');
   const [useThinking, setUseThinking] = useState(true);
   const [autoTest, setAutoTest] = useState(false);
   const [maxIterations, setMaxIterations] = useState(2);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [selectedPreset, setSelectedPreset] = useState('balanced');
   
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -139,74 +199,254 @@ const Generator = () => {
     }
   };
 
+  const charCount = description.length;
+  const charLimit = 1000;
+  const charPercentage = (charCount / charLimit) * 100;
+
+  const applyTemplate = (template) => {
+    setDescription(template.description);
+    setShowTemplates(false);
+    toast.success(`Applied ${template.name} template`);
+  };
+
+  const applyPreset = (presetName) => {
+    const preset = presets[presetName];
+    setUseThinking(preset.useThinking);
+    setAutoTest(preset.autoTest);
+    setMaxIterations(preset.maxIterations);
+    setSelectedPreset(presetName);
+    toast.success(`Applied ${presetName} preset`);
+  };
+
+  const currentStep = generating 
+    ? progress < 25 ? 0 
+    : progress < 50 ? 1 
+    : progress < 75 ? 2 
+    : 3
+    : -1;
+
+  const generationSteps = [
+    { label: 'Planning', description: 'Analyzing requirements' },
+    { label: 'Generating', description: 'Creating code' },
+    { label: 'Reviewing', description: 'Quality check' },
+    { label: 'Complete', description: 'Finalizing' }
+  ];
+
   return (
-    <div className="space-y-6" data-testid="generator-container">
-      <div>
-        <h2 className="text-3xl font-bold text-slate-800 mb-2">🚀 Generate Your App</h2>
-        <p className="text-slate-600">Describe what you want to build, and watch AI create it for you</p>
-      </div>
+    <TooltipProvider>
+      <div className="space-y-6" data-testid="generator-container">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-200 mb-2">🚀 Generate Your App</h2>
+          <p className="text-slate-600 dark:text-slate-400">Describe what you want to build, and watch AI create it for you</p>
+        </div>
 
-      {/* Input Section */}
-      <Card className="border-slate-200 shadow-lg bg-white/80 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="text-xl">App Description</CardTitle>
-          <CardDescription>Be specific about features and functionality you want</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <Textarea
-            data-testid="app-description-input"
-            className="min-h-[120px] text-base border-slate-300 focus:border-indigo-500 focus:ring-indigo-500"
-            placeholder="Example: Build me a todo app with dark mode, drag-and-drop reordering, categories, and local storage persistence. Make it visually stunning with smooth animations."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={generating}
-          />
+        {/* Input Section */}
+        <Card className="border-slate-200 dark:border-slate-700 shadow-lg bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm transition-colors">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl">App Description</CardTitle>
+                <CardDescription>Be specific about features and functionality you want</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowTemplates(!showTemplates)}
+                className="flex items-center space-x-2"
+              >
+                <Lightbulb className="w-4 h-4" />
+                <span>Templates</span>
+                {showTemplates ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Template Selector */}
+            <AnimatePresence>
+              {showTemplates && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pb-4">
+                    {templates.map((template) => (
+                      <button
+                        key={template.id}
+                        onClick={() => applyTemplate(template)}
+                        disabled={generating}
+                        className="p-4 text-left rounded-lg border border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <div className="flex items-center space-x-2 mb-2">
+                          <span className="text-2xl">{template.icon}</span>
+                          <span className="font-semibold text-slate-800 dark:text-slate-200">{template.name}</span>
+                        </div>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
+                          {template.description}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
-          {/* Options */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-200">
-              <Label htmlFor="thinking-mode" className="text-sm font-medium cursor-pointer">
-                🧠 Use Pro Planning
-              </Label>
-              <Switch
-                id="thinking-mode"
-                data-testid="thinking-mode-switch"
-                checked={useThinking}
-                onCheckedChange={setUseThinking}
+            {/* Textarea with character counter */}
+            <div className="relative">
+              <Textarea
+                data-testid="app-description-input"
+                className="min-h-[120px] text-base border-slate-300 dark:border-slate-600 focus:border-indigo-500 focus:ring-indigo-500 pr-20"
+                placeholder="Example: Build me a todo app with dark mode, drag-and-drop reordering, categories, and local storage persistence. Make it visually stunning with smooth animations."
+                value={description}
+                onChange={(e) => {
+                  if (e.target.value.length <= charLimit) {
+                    setDescription(e.target.value);
+                  }
+                }}
                 disabled={generating}
+                maxLength={charLimit}
               />
+              <div className="absolute bottom-3 right-3 flex items-center space-x-2">
+                <div className={`text-xs font-medium ${
+                  charPercentage > 90 
+                    ? 'text-red-600 dark:text-red-400' 
+                    : charPercentage > 75 
+                    ? 'text-yellow-600 dark:text-yellow-400' 
+                    : 'text-slate-500 dark:text-slate-400'
+                }`}>
+                  {charCount}/{charLimit}
+                </div>
+              </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-200">
-              <Label htmlFor="auto-test" className="text-sm font-medium cursor-pointer">
-                🧪 Auto-test & Fix
-              </Label>
-              <Switch
-                id="auto-test"
-                data-testid="auto-test-switch"
-                checked={autoTest}
-                onCheckedChange={setAutoTest}
-                disabled={generating}
-              />
-            </div>
-
-            <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 border border-slate-200">
-              <Label htmlFor="max-iterations" className="text-sm font-medium">
-                Max Fix Attempts
-              </Label>
-              <input
-                id="max-iterations"
-                data-testid="max-iterations-input"
-                type="number"
-                min="1"
-                max="5"
-                value={maxIterations}
-                onChange={(e) => setMaxIterations(parseInt(e.target.value))}
-                disabled={generating}
-                className="w-16 px-3 py-1.5 text-center border border-slate-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
+          {/* Preset Configurations */}
+          <div className="flex items-center space-x-2 pb-2">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Quick Presets:</span>
+            <div className="flex space-x-2">
+              {Object.keys(presets).map((presetName) => (
+                <button
+                  key={presetName}
+                  onClick={() => applyPreset(presetName)}
+                  disabled={generating}
+                  className={`px-3 py-1 text-xs font-medium rounded-full transition-all duration-200 ${
+                    selectedPreset === presetName
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'
+                  } disabled:opacity-50 disabled:cursor-not-allowed capitalize`}
+                >
+                  {presetName}
+                </button>
+              ))}
             </div>
           </div>
+
+          {/* Advanced Options Toggle */}
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center space-x-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors"
+          >
+            <span>{showAdvanced ? 'Hide' : 'Show'} Advanced Options</span>
+            {showAdvanced ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+
+          {/* Options */}
+          <AnimatePresence>
+            {showAdvanced && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="overflow-hidden"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="thinking-mode" className="text-sm font-medium cursor-pointer">
+                        🧠 Use Pro Planning
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-slate-400 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Uses Gemini 2.5 Pro for better planning and architecture</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Switch
+                      id="thinking-mode"
+                      data-testid="thinking-mode-switch"
+                      checked={useThinking}
+                      onCheckedChange={(checked) => {
+                        setUseThinking(checked);
+                        setSelectedPreset('custom');
+                      }}
+                      disabled={generating}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="auto-test" className="text-sm font-medium cursor-pointer">
+                        🧪 Auto-test & Fix
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-slate-400 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Automatically tests and fixes code issues</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <Switch
+                      id="auto-test"
+                      data-testid="auto-test-switch"
+                      checked={autoTest}
+                      onCheckedChange={(checked) => {
+                        setAutoTest(checked);
+                        setSelectedPreset('custom');
+                      }}
+                      disabled={generating}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="max-iterations" className="text-sm font-medium">
+                        Max Fix Attempts
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="w-4 h-4 text-slate-400 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">Number of times to retry if generation fails</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    <input
+                      id="max-iterations"
+                      data-testid="max-iterations-input"
+                      type="number"
+                      min="1"
+                      max="5"
+                      value={maxIterations}
+                      onChange={(e) => {
+                        setMaxIterations(parseInt(e.target.value));
+                        setSelectedPreset('custom');
+                      }}
+                      disabled={generating}
+                      className="w-16 px-3 py-1.5 text-center border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white dark:bg-slate-900"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Generate Button */}
           <Button
@@ -221,34 +461,104 @@ const Generator = () => {
       </Card>
 
       {/* Progress Section */}
-      {generating && (
-        <Card data-testid="progress-card" className="border-indigo-200 bg-indigo-50/50 backdrop-blur-sm">
-          <CardContent className="pt-6">
-            <div className="mb-3 flex justify-between text-sm font-medium">
-              <span className="text-indigo-700">{statusMessage}</span>
-              <span className="text-indigo-600">{progress}%</span>
-            </div>
-            <Progress value={progress} className="h-3" />
-          </CardContent>
-        </Card>
-      )}
+      <AnimatePresence>
+        {generating && (
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.3 }}
+          >
+            <Card data-testid="progress-card" className="border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/20 backdrop-blur-sm">
+              <CardContent className="pt-6 space-y-6">
+                {/* Multi-step Progress Indicator */}
+                <ProgressSteps 
+                  steps={generationSteps} 
+                  currentStep={currentStep}
+                />
+                
+                {/* Status Message */}
+                <div className="text-center">
+                  <motion.div
+                    key={statusMessage}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center justify-center space-x-2 text-indigo-700 dark:text-indigo-300 font-medium"
+                  >
+                    <Sparkles className="w-5 h-5 animate-pulse" />
+                    <span>{statusMessage}</span>
+                  </motion.div>
+                </div>
+
+                {/* Progress Bar */}
+                <div>
+                  <Progress 
+                    value={progress} 
+                    gradient={true}
+                    showPercentage={true}
+                    size="lg"
+                  />
+                </div>
+
+                {/* Cancel Button */}
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setGenerating(false);
+                      setProgress(0);
+                      toast.info('Generation cancelled');
+                    }}
+                    className="text-slate-600 dark:text-slate-400"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Result Section */}
-      {result && result.success && (
-        <div className="space-y-6" data-testid="result-section">
-          {/* Success Message */}
-          <Card className="border-green-200 bg-green-50/50">
-            <CardContent className="pt-6">
-              <div className="flex items-start space-x-3">
-                <div className="text-3xl">✅</div>
-                <div className="flex-1">
-                  <p className="text-green-800 font-semibold text-lg">App generated successfully!</p>
-                  {result.patterns_used > 0 && (
-                    <p className="text-green-700 text-sm mt-1">
-                      ♻️ Reused {result.patterns_used} learned patterns! Generation was faster.
-                    </p>
-                  )}
-                  <p className="text-green-700 text-sm">⏱️ Time taken: {result.time_taken.toFixed(2)}s</p>
+      <AnimatePresence>
+        {result && result.success && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+            className="space-y-6" 
+            data-testid="result-section"
+          >
+            {/* Success Message */}
+            <Card className="border-green-200 dark:border-green-800 bg-green-50/50 dark:bg-green-900/20 overflow-hidden">
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="h-1 bg-gradient-to-r from-green-500 to-emerald-500"
+              />
+              <CardContent className="pt-6">
+                <div className="flex items-start space-x-3">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
+                    className="text-3xl"
+                  >
+                    ✅
+                  </motion.div>
+                  <div className="flex-1">
+                    <p className="text-green-800 dark:text-green-200 font-semibold text-lg">App generated successfully!</p>
+                    {result.patterns_used > 0 && (
+                      <p className="text-green-700 dark:text-green-300 text-sm mt-1">
+                        ♻️ Reused {result.patterns_used} learned patterns! Generation was faster.
+                      </p>
+                    )}
+                    <p className="text-green-700 dark:text-green-300 text-sm">⏱️ Time taken: {result.time_taken.toFixed(2)}s</p>
                   
                   {/* A2A Multi-Agent Info */}
                   {result.metadata?.orchestrated_by && (
@@ -303,49 +613,90 @@ const Generator = () => {
           {result.files && <CodeViewer files={result.files} />}
 
           {/* Feedback Section */}
-          <Card>
+          <Card className="border-slate-200 dark:border-slate-700">
             <CardHeader>
               <CardTitle className="text-lg">How was this generation?</CardTitle>
               <CardDescription>Your feedback helps the AI improve</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-4">
-                <Button
-                  data-testid="feedback-success-button"
-                  onClick={() => handleFeedback('success')}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white py-6 text-base font-semibold"
-                >
-                  👍 Perfect!
-                </Button>
-                <Button
-                  data-testid="feedback-failure-button"
-                  onClick={() => handleFeedback('failure')}
-                  variant="destructive"
-                  className="flex-1 py-6 text-base font-semibold"
-                >
-                  👎 Needs Work
-                </Button>
+                <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    data-testid="feedback-success-button"
+                    onClick={() => handleFeedback('success')}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
+                  >
+                    👍 Perfect!
+                  </Button>
+                </motion.div>
+                <motion.div className="flex-1" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button
+                    data-testid="feedback-failure-button"
+                    onClick={() => handleFeedback('failure')}
+                    variant="destructive"
+                    className="w-full py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
+                  >
+                    👎 Needs Work
+                  </Button>
+                </motion.div>
               </div>
             </CardContent>
           </Card>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Error Section */}
-      {result && !result.success && (
-        <Card data-testid="error-card" className="border-red-200 bg-red-50/50">
-          <CardContent className="pt-6">
-            <div className="flex items-start space-x-3">
-              <div className="text-3xl">❌</div>
-              <div>
-                <p className="text-red-800 font-semibold text-lg">Generation failed</p>
-                <p className="text-red-700 text-sm mt-1">{result.error}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+      <AnimatePresence>
+        {result && !result.success && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card data-testid="error-card" className="border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/20 overflow-hidden">
+              <motion.div
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="h-1 bg-gradient-to-r from-red-500 to-rose-500"
+              />
+              <CardContent className="pt-6">
+                <div className="flex items-start space-x-3">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 200, delay: 0.3 }}
+                    className="text-3xl"
+                  >
+                    ❌
+                  </motion.div>
+                  <div className="flex-1">
+                    <p className="text-red-800 dark:text-red-200 font-semibold text-lg">Generation failed</p>
+                    <p className="text-red-700 dark:text-red-300 text-sm mt-1">{result.error}</p>
+                    <div className="mt-4">
+                      <Button
+                        onClick={() => {
+                          setResult(null);
+                          handleGenerate();
+                        }}
+                        variant="outline"
+                        className="border-red-300 dark:border-red-700 text-red-700 dark:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/30"
+                      >
+                        <Zap className="w-4 h-4 mr-2" />
+                        Try Again
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      </div>
+    </TooltipProvider>
   );
 };
 

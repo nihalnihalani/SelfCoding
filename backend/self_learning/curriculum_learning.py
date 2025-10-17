@@ -26,6 +26,7 @@ class TaskCategory(Enum):
     ALGORITHMS = "algorithms"
     FULL_STACK = "full_stack"
     PERFORMANCE_OPTIMIZATION = "performance_optimization"
+    RESEARCH = "research"
 
 
 @dataclass
