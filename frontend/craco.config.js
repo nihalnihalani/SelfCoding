@@ -13,6 +13,25 @@ module.exports = {
     },
     configure: (webpackConfig) => {
       
+      // Suppress source map warnings
+      webpackConfig.ignoreWarnings = [
+        /Failed to parse source map/,
+        /source-map-loader/,
+      ];
+
+      // Remove source-map-loader to prevent warnings
+      webpackConfig.module.rules = webpackConfig.module.rules.map(rule => {
+        if (rule.oneOf) {
+          rule.oneOf = rule.oneOf.filter(loader => {
+            if (loader.loader && loader.loader.includes('source-map-loader')) {
+              return false; // Remove source-map-loader
+            }
+            return true;
+          });
+        }
+        return rule;
+      });
+      
       // Disable hot reload completely if environment variable is set
       if (config.disableHotReload) {
         // Remove hot reload related plugins

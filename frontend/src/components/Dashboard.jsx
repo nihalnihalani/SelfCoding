@@ -355,6 +355,20 @@ const MetricCard = ({
   sparklineData,
   sparklineColor
 }) => {
+  // Define helper functions first
+  const getTrend = (current, previous) => {
+    if (!previous) return 'neutral';
+    if (current > previous) return 'up';
+    if (current < previous) return 'down';
+    return 'neutral';
+  };
+
+  const getTrendPercentage = (current, previous) => {
+    if (!previous || previous === 0) return 0;
+    return ((current - previous) / previous) * 100;
+  };
+
+  // Now use them
   const trend = previousValue !== undefined ? getTrend(value, previousValue) : 'neutral';
   const trendPercentage = previousValue !== undefined ? getTrendPercentage(value, previousValue) : 0;
   
@@ -368,18 +382,6 @@ const MetricCard = ({
     if (trend === 'neutral') return 'text-slate-500';
     const isPositive = invertTrend ? trend === 'down' : trend === 'up';
     return isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
-  };
-
-  const getTrend = (current, previous) => {
-    if (!previous) return 'neutral';
-    if (current > previous) return 'up';
-    if (current < previous) return 'down';
-    return 'neutral';
-  };
-
-  const getTrendPercentage = (current, previous) => {
-    if (!previous || previous === 0) return 0;
-    return ((current - previous) / previous) * 100;
   };
 
   return (

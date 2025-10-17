@@ -20,6 +20,17 @@ from integrations.daytona_sandbox import daytona_sandbox
 # Temporarily disable CopilotKit SDK integration due to HTTPS issues
 # from copilotkit_setup import setup_copilotkit, set_data_refs
 
+# Suppress Google Cloud and GRPC warnings
+os.environ['GRPC_VERBOSITY'] = 'ERROR'
+os.environ['GRPC_TRACE'] = ''
+os.environ['GLOG_minloglevel'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+# Suppress absl logging warnings
+import warnings
+warnings.filterwarnings('ignore', category=DeprecationWarning)
+warnings.filterwarnings('ignore', message='.*ALTS.*')
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
@@ -212,7 +223,7 @@ async def generate_with_gemini(description: str, past_patterns: List[Dict], use_
             })
             
             # Create planning model
-            planning_model = genai.GenerativeModel('gemini-2.5-flash-002')
+            planning_model = genai.GenerativeModel('gemini-flash-latest')
             
             planning_prompt = f"""You are an expert technical architect. Analyze app requirements and create detailed technical plans.
 
@@ -242,7 +253,7 @@ Provide detailed technical plan."""
             })
             
             # Step 2: Code generation with Gemini 2.5 Flash
-            code_model = genai.GenerativeModel('gemini-2.5-flash-002')
+            code_model = genai.GenerativeModel('gemini-flash-latest')
             
             code_prompt = f"""You are an expert full-stack developer. Generate complete, production-ready web applications.
 
@@ -262,28 +273,42 @@ Generate a COMPLETE, production-ready web application with:
 3. script.js - Complete JavaScript functionality
 4. README.md - Usage instructions
 
-IMPORTANT:
+CRITICAL REQUIREMENTS:
 - NO placeholders or TODO comments
 - Complete, runnable code
 - Modern, beautiful design
 - All functionality working
+- Return ONLY valid JSON (no markdown, no code blocks)
+- Ensure all strings are properly escaped for JSON
 
-Return ONLY valid JSON in this exact format:
+Return response in this EXACT format (valid JSON only):
 {{
   "files": {{
-    "index.html": "<complete HTML code>",
-    "styles.css": "<complete CSS code>",
-    "script.js": "<complete JavaScript code>",
-    "README.md": "<instructions>"
+    "index.html": "complete HTML code here with escaped quotes",
+    "styles.css": "complete CSS code here",
+    "script.js": "complete JavaScript code here with escaped quotes",
+    "README.md": "usage instructions"
   }},
   "metadata": {{
     "tech_stack": ["HTML", "CSS", "JavaScript"],
     "features": ["list of features"],
     "patterns_used": ["patterns applied"]
   }}
-}}"""
+}}
+
+IMPORTANT: Make sure all newlines are \\n and all quotes are properly escaped."""
             
-            code_response = await asyncio.to_thread(code_model.generate_content, code_prompt)
+            # Configure Gemini with JSON mode for better structured output
+            generation_config = {
+                "temperature": 0.7,
+                "response_mime_type": "application/json"
+            }
+            code_model_json = genai.GenerativeModel(
+                'gemini-flash-latest',
+                generation_config=generation_config
+            )
+            
+            code_response = await asyncio.to_thread(code_model_json.generate_content, code_prompt)
             code_response_text = code_response.text
             
             # Parse JSON response
@@ -310,8 +335,8 @@ Return ONLY valid JSON in this exact format:
                 
                 response_text = response_text.strip()
                 
-                # Try to parse JSON
-                result = json.loads(response_text)
+                # Try to parse JSON with strict mode off for better compatibility
+                result = json.loads(response_text, strict=False)
                 
                 # Validate structure
                 if 'files' not in result or not isinstance(result['files'], dict):
@@ -325,13 +350,13 @@ Return ONLY valid JSON in this exact format:
                     'files': result.get('files', {}),
                     'metadata': result.get('metadata', {}),
                     'technical_plan': technical_plan,
-                    'model': 'gemini-2.5-pro + flash'
+                    'model': 'gemini-flash-latest'
                 }
             except json.JSONDecodeError as e:
                 # If JSON parsing fails, provide detailed error
                 return {
                     'success': False,
-                    'error': f"Failed to parse AI response as JSON. Response preview: {response_text[:200]}... Error: {str(e)}"
+                    'error': f"Failed to parse AI response as JSON. The model returned improperly escaped JSON. Please try again. Error: {str(e)}"
                 }
         
         else:
@@ -342,7 +367,15 @@ Return ONLY valid JSON in this exact format:
                 "progress": 30
             })
             
-            code_model = genai.GenerativeModel('gemini-2.5-flash-002')
+            # Configure Gemini with JSON mode
+            generation_config = {
+                "temperature": 0.7,
+                "response_mime_type": "application/json"
+            }
+            code_model = genai.GenerativeModel(
+                'gemini-flash-latest',
+                generation_config=generation_config
+            )
             
             prompt = f"""You are an expert full-stack developer. Generate a COMPLETE web application.
 
@@ -350,20 +383,24 @@ REQUEST: {description}
 
 {pattern_context}
 
-Return ONLY valid JSON:
+Generate complete HTML, CSS, and JavaScript files.
+
+Return response as valid JSON with properly escaped strings:
 {{
   "files": {{
-    "index.html": "<complete HTML>",
-    "styles.css": "<complete CSS>",
-    "script.js": "<complete JS>",
-    "README.md": "<instructions>"
+    "index.html": "complete HTML code with escaped quotes",
+    "styles.css": "complete CSS code",
+    "script.js": "complete JavaScript code with escaped quotes",
+    "README.md": "usage instructions"
   }},
   "metadata": {{
-    "tech_stack": [],
-    "features": [],
-    "patterns_used": []
+    "tech_stack": ["HTML", "CSS", "JavaScript"],
+    "features": ["feature 1", "feature 2"],
+    "patterns_used": ["pattern 1", "pattern 2"]
   }}
-}}"""
+}}
+
+CRITICAL: Return ONLY valid JSON. Ensure all quotes and newlines are properly escaped."""
             
             response = await asyncio.to_thread(code_model.generate_content, prompt)
             response_text_raw = response.text
@@ -379,7 +416,7 @@ Return ONLY valid JSON:
                         'error': "Received empty response from AI. This might indicate an API authentication issue or rate limit."
                     }
                 
-                # Remove markdown code block markers
+                # Remove markdown code block markers (shouldn't be needed with JSON mode)
                 if '```json' in response_text:
                     response_text = response_text.split('```json')[1]
                     if '```' in response_text:
@@ -391,7 +428,8 @@ Return ONLY valid JSON:
                 
                 response_text = response_text.strip()
                 
-                result = json.loads(response_text)
+                # Parse JSON with strict=False for better compatibility
+                result = json.loads(response_text, strict=False)
                 
                 # Validate structure
                 if 'files' not in result or not isinstance(result['files'], dict):
@@ -404,12 +442,12 @@ Return ONLY valid JSON:
                     'success': True,
                     'files': result.get('files', {}),
                     'metadata': result.get('metadata', {}),
-                    'model': 'gemini-2.5-flash'
+                    'model': 'gemini-flash-latest'
                 }
             except json.JSONDecodeError as e:
                 return {
                     'success': False,
-                    'error': f"Failed to parse AI response as JSON. Response preview: {response_text[:200]}... Error: {str(e)}"
+                    'error': f"Failed to parse AI response as JSON. The model returned improperly escaped JSON. Please try again. Error: {str(e)}"
                 }
     
     except Exception as e:
@@ -581,6 +619,7 @@ async def generate_app_endpoint(request: GenerationRequest):
         )
         
     except Exception as e:
+        logger.error(f"Generation failed: {str(e)}", exc_info=True)
         await send_update({
             "type": "error",
             "message": f"❌ Error: {str(e)}",
@@ -1137,6 +1176,12 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Suppress noisy third-party loggers
+logging.getLogger('google').setLevel(logging.ERROR)
+logging.getLogger('grpc').setLevel(logging.ERROR)
+logging.getLogger('absl').setLevel(logging.ERROR)
+logging.getLogger('urllib3').setLevel(logging.WARNING)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

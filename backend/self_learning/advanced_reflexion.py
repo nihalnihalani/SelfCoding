@@ -244,7 +244,7 @@ class AdvancedReflexionFramework:
             return insights  # Skip if API key not configured
         
         genai.configure(api_key=api_key)
-        causal_model = genai.GenerativeModel('gemini-2.5-flash-002')
+        causal_model = genai.GenerativeModel('gemini-flash-latest')
         
         prompt = f"""Analyze the causal relationships in this coding agent performance:
 
@@ -316,7 +316,7 @@ Return JSON:
                 return insights  # Skip if API key not configured
             
             genai.configure(api_key=api_key)
-            counterfactual_model = genai.GenerativeModel('gemini-2.5-flash-002')
+            counterfactual_model = genai.GenerativeModel('gemini-flash-latest')
             
             prompt = f"""Analyze counterfactual scenarios for this failed coding task:
 
