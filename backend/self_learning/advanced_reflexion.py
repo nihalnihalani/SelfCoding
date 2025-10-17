@@ -239,7 +239,7 @@ class AdvancedReflexionFramework:
         insights = []
         
         # Configure Gemini
-        api_key = os.getenv('GEMINI_API_KEY') or os.getenv('EMERGENT_LLM_KEY')
+        api_key = os.getenv('GEMINI_API_KEY')
         if not api_key or api_key in ['demo-key', 'YOUR_API_KEY_HERE']:
             return insights  # Skip if API key not configured
         
@@ -311,7 +311,7 @@ Return JSON:
         
         if not success:
             # Configure Gemini
-            api_key = os.getenv('GEMINI_API_KEY') or os.getenv('EMERGENT_LLM_KEY')
+            api_key = os.getenv('GEMINI_API_KEY')
             if not api_key or api_key in ['demo-key', 'YOUR_API_KEY_HERE']:
                 return insights  # Skip if API key not configured
             

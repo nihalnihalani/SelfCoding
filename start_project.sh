@@ -53,7 +53,6 @@ if [ ! -f ".env" ]; then
     cat > .env << EOF
 MONGO_URL=mongodb://localhost:27017
 DB_NAME=codeforge
-EMERGENT_LLM_KEY=demo-key
 CORS_ORIGINS=http://localhost:3000
 EOF
 fi
