@@ -44,8 +44,8 @@ db = client[os.environ['DB_NAME']]
 success_patterns_db = []
 failure_patterns_db = []
 
-# Initialize A2A Manager Agent
-manager_agent = ManagerAgent()
+# Initialize A2A Manager Agent (Disabled - using direct Gemini integration)
+# manager_agent = ManagerAgent()
 
 # Initialize Self-Improvement Engine
 self_improvement_engine = SelfImprovementEngine()
@@ -504,46 +504,19 @@ async def root():
         }
     }
 
-@api_router.get("/agents")
-async def list_agents():
-    """List all available A2A agents."""
-    return {
-        "agents": [
-            manager_agent.get_agent_card().dict(),
-            manager_agent.code_generator.get_agent_card().dict(),
-            manager_agent.code_reviewer.get_agent_card().dict(),
-            manager_agent.pattern_analyzer.get_agent_card().dict()
-        ]
-    }
+# Legacy endpoint disabled - agents module removed
+# @api_router.get("/agents")
+# async def list_agents():
+#     """List all available A2A agents."""
+#     return {
+#         "agents": []
+#     }
 
-@api_router.post("/agents/{agent_name}")
-async def call_agent(agent_name: str, message: dict):
-    """A2A Protocol endpoint for agent communication."""
-    try:
-        a2a_message = A2AMessage(**message)
-        
-        # Route to appropriate agent
-        if agent_name == "manager":
-            response = await manager_agent.process_message(a2a_message)
-        elif agent_name == "code_generator":
-            response = await manager_agent.code_generator.process_message(a2a_message)
-        elif agent_name == "code_reviewer":
-            response = await manager_agent.code_reviewer.process_message(a2a_message)
-        elif agent_name == "pattern_analyzer":
-            response = await manager_agent.pattern_analyzer.process_message(a2a_message)
-        else:
-            return {"error": "Agent not found"}, 404
-        
-        return response.dict()
-    except Exception as e:
-        return {
-            "jsonrpc": "2.0",
-            "error": {
-                "code": -32603,
-                "message": str(e)
-            },
-            "id": message.get('id')
-        }
+# Legacy endpoint disabled - agents module removed
+# @api_router.post("/agents/{agent_name}")
+# async def call_agent(agent_name: str, message: dict):
+#     """A2A Protocol endpoint for agent communication."""
+#     return {"error": "Agent endpoints disabled - using direct Gemini integration"}
 
 @api_router.post("/generate", response_model=GenerationResponse)
 async def generate_app_endpoint(request: GenerationRequest):
