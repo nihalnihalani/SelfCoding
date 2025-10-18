@@ -23,19 +23,64 @@ const AdvancedSelfLearning = () => {
 
   useEffect(() => {
     loadComprehensiveData();
-    const interval = setInterval(loadComprehensiveData, 15000);
+    // Reduced refresh interval to 30 seconds for better performance
+    const interval = setInterval(loadComprehensiveData, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const loadComprehensiveData = async () => {
     try {
-      // Call the comprehensive learning report endpoint
-      const response = await axios.get(`${API}/self-learning/comprehensive-report`);
+      // Call the comprehensive learning report endpoint with timeout
+      const response = await axios.get(`${API}/self-learning/comprehensive-report`, {
+        timeout: 5000 // 5 second timeout for faster failure
+      });
       setComprehensiveReport(response.data);
       setIsDemoData(false);
       setLoading(false);
     } catch (error) {
       console.error('Failed to load comprehensive learning data:', error);
+      // Set empty data structure to prevent errors
+      setComprehensiveReport({
+        overall_learning_score: 0,
+        score_breakdown: [
+          "Curriculum Mastery: 0.0/30",
+          "Memory Performance: 0.0/25",
+          "Reflection Quality: 0.0/20",
+          "Learning Velocity: 0.0/25"
+        ],
+        improvement_cycles_completed: 0,
+        curriculum_progress: {
+          total_tasks_attempted: 0,
+          mastered_tasks: 0,
+          mastery_rate: 0,
+          current_difficulty_level: "BEGINNER",
+          focus_areas: [],
+          learning_velocity_per_week: 0,
+          next_recommended_tasks: []
+        },
+        meta_learning_insights: {
+          strategy_performance: {},
+          learning_trajectory: { early_avg_quality: 0, recent_avg_quality: 0, improvement: 0 },
+          domain_mastery: {}
+        },
+        reflection_quality: {
+          total_reflections: 0,
+          insights_by_type: {},
+          average_confidence: 0,
+          average_impact: 0,
+          recent_confidence_trend: 0,
+          most_recent_insights: []
+        },
+        learning_efficiency: {
+          total_learning_time_minutes: 0,
+          learning_velocity_per_hour: 0,
+          time_efficiency: 0,
+          strategy_efficiency: {}
+        },
+        recommendations: ["Generate your first app to start learning!"],
+        next_suggested_task: "Create a simple button with hover effects",
+        learning_trajectory: "developing"
+      });
       setLoading(false);
     }
   };

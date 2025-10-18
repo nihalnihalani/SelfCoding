@@ -13,8 +13,9 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 import google.generativeai as genai
-from agents.manager_agent import ManagerAgent
-from agents.base_agent import A2AMessage
+# Legacy agent imports removed - using direct Gemini integration
+# from agents.manager_agent import ManagerAgent
+# from agents.base_agent import A2AMessage
 from self_learning.self_improvement_engine import SelfImprovementEngine
 from integrations.daytona_sandbox import daytona_sandbox
 # Temporarily disable CopilotKit SDK integration due to HTTPS issues
