@@ -280,7 +280,7 @@ Learning loop:
 - **Framework**: FastAPI (async)
 - **Protocol**: A2A (JSON-RPC 2.0)
 - **LLM**: Google Gemini 2.5 Pro + Flash
-- **Integration**: emergentintegrations
+- **Integration**: Google Gemini SDK
 - **Storage**: In-memory patterns + MongoDB
 
 ### Frontend
@@ -293,7 +293,7 @@ Learning loop:
 ## Security Considerations
 
 ### Current Implementation
-- API key authentication (EMERGENT_LLM_KEY)
+- API key authentication (GEMINI_API_KEY)
 - CORS configuration
 - Input validation with Pydantic
 
@@ -341,10 +341,10 @@ Manager tracks:
 
 ```bash
 # List available agents
-curl https://self-improving-dev.preview.emergentagent.com/api/agents
+curl http://localhost:8000/api/agents
 
 # Call Manager Agent
-curl -X POST https://self-improving-dev.preview.emergentagent.com/api/agents/manager \
+curl -X POST http://localhost:8000/api/agents/manager \
   -H "Content-Type: application/json" \
   -d '{
     "jsonrpc": "2.0",
@@ -359,7 +359,7 @@ curl -X POST https://self-improving-dev.preview.emergentagent.com/api/agents/man
 ```
 
 ### Use CopilotKit Interface
-1. Open https://self-improving-dev.preview.emergentagent.com
+1. Open http://localhost:3000
 2. Click the floating AI Assistant button
 3. Chat with the multi-agent system
 4. Request app generation via natural language

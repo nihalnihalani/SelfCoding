@@ -11,7 +11,7 @@ import numpy as np
 from datetime import datetime, timedelta
 from collections import defaultdict, deque
 import asyncio
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+# Legacy import removed - LlmChat not used in current implementation
 import os
 
 
@@ -316,14 +316,11 @@ class MetaLearningEngine:
         
         domains = list(domain_experiences.keys())
         
-        # Calculate similarities using LLM analysis
+        # Calculate similarities using LLM analysis (currently disabled - using heuristic approach)
         if len(domains) >= 2:
             try:
-                similarity_chat = LlmChat(
-                    api_key=os.getenv('EMERGENT_LLM_KEY'),
-                    session_id=f"similarity_{datetime.now().timestamp()}",
-                    system_message="You are an expert in domain analysis. Assess similarity between coding domains."
-                ).with_model("gemini", "gemini-2.5-flash")
+                # Legacy LlmChat code removed - using direct similarity calculation
+                similarity_chat = None
                 
                 # Analyze domain characteristics
                 domain_characteristics = {}
